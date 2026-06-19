@@ -45,6 +45,22 @@ function M.supported_cached()
   return supported_cache == true
 end
 
+---Has the support probe run yet, regardless of its result?
+---@return boolean
+function M.probed()
+  return supported_cache ~= nil
+end
+
+---Cheap, synchronous capability check — no terminal round-trip. True if this
+---build could render images at all (vim.ui.img present + a converter on PATH).
+---Lets a host suppress its glyph on the very FIRST render, before the blocking
+---probe has run, so an auto-opened explorer doesn't flash glyphs before images
+---land. Actual placement still waits on supported().
+---@return boolean
+function M.capable()
+  return vim.ui.img ~= nil and raster.has_converter()
+end
+
 ---@class svgtree.engine.Spec
 ---@field stem string icon stem (resolves to <pack>/<stem>.svg)
 ---@field col integer 1-indexed *byte* column the icon anchors to

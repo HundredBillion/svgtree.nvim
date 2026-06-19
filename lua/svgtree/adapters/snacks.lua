@@ -73,11 +73,24 @@ end
 ---@param picker snacks.Picker
 function M.format(item, picker)
   local F = require('snacks.picker.format')
-  -- Without real-image support (e.g. Neovim < 0.13, or a non-graphics
-  -- terminal) we must NOT blank the glyph — fall back to snacks' default so
-  -- the explorer still shows its normal icons. Use the cached read: this runs
-  -- inside snacks' render loop, where a blocking probe would corrupt the write.
-  if not engine.supported_cached() then
+  -- Decide whether to blank the host glyph and reserve an image slot. Never
+  -- probe here: this runs inside snacks' render loop, where a blocking probe
+  -- would corrupt the write.
+  --   * known supported            -> blank (images will be placed)
+  --   * not probed yet but capable -> blank optimistically, so an auto-opened
+  --       explorer doesn't flash the default glyph before the deferred probe +
+  --       placement run; if the probe later says unsupported, attach() forces a
+  --       re-render that restores glyphs
+  --   * probed-unsupported, or not capable -> keep snacks' default glyphs
+  local suppress
+  if engine.supported_cached() then
+    suppress = true
+  elseif not engine.probed() then
+    suppress = engine.capable()
+  else
+    suppress = false
+  end
+  if not suppress then
     return F.file(item, picker)
   end
   local ret = {} ---@type snacks.picker.Highlight[]
@@ -151,16 +164,23 @@ end
 -- show and the icons never get placed.
 ---@param picker snacks.Picker
 local function attach(picker)
-  if not engine.supported() then
+  local ok = engine.supported()
+  local list = picker.list
+  if not (list and list.win and list.win.win and list.win.buf) then
+    return
+  end
+  if not ok then
+    -- Probe came back unsupported (e.g. non-graphics terminal). format() may
+    -- have optimistically reserved blank image slots; re-render so it now falls
+    -- back to snacks' default glyphs.
+    pcall(function()
+      list.dirty = true
+      list:update({ force = true })
+    end)
     return
   end
   if not config.options.pack then
     config.setup({})
-  end
-
-  local list = picker.list
-  if not (list and list.win and list.win.win and list.win.buf) then
-    return
   end
   local win, buf = list.win.win, list.win.buf
 
