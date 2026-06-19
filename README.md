@@ -132,7 +132,7 @@ usual.
 
 ## Roadmap
 
-- [ ] VSCode Material Icon Theme pack importer
+- [x] VSCode Material Icon Theme pack importer
 - [ ] Nerd Font glyph fallback (instead of text tags)
 - [ ] Transmit-each-icon-once optimization (reuse placements vs re-sending bytes)
 - [ ] Git status / diagnostics decorations
@@ -142,6 +142,10 @@ usual.
 
 Born from a deep-dive into whether VSCode-style SVG icons are possible in terminal Neovim. Built on [`vim.ui.img`](https://github.com/neovim/neovim/pull/37914) by [@chipsenkbeil](https://github.com/chipsenkbeil) and the Neovim team.
 
+The Material icon pack is the [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) by Philipp Kief and contributors, licensed [MIT](https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE.md). svgtree does not bundle its SVGs; `scripts/install-material.sh` fetches them from the published [`material-icon-theme`](https://www.npmjs.com/package/material-icon-theme) npm package and generates the resolver in `lua/svgtree/packs/material_map.lua` from the theme's manifest.
+
 ## License
 
 MIT © David Lee
+
+The bundled Material resolver data (`lua/svgtree/packs/material_map.lua`) is derived from the Material Icon Theme manifest and remains under its original MIT license (see Credits).
