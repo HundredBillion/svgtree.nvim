@@ -4,21 +4,14 @@
 -- reconcile by visible range and reposition with vim.ui.img on scroll).
 
 local config = require('svgtree.config')
+local engine = require('svgtree.engine')
 local icons = require('svgtree.icons')
-local raster = require('svgtree.raster')
 local Tree = require('svgtree.tree')
 
 local M = {}
 
----@type { buf:integer, win:integer, prev_win:integer, tree:svgtree.Tree, nodes:svgtree.Node[], shown:table<integer,integer>, grp:integer, images:boolean }|nil
+---@type { buf:integer, win:integer, prev_win:integer, tree:svgtree.Tree, nodes:svgtree.Node[], engine?:svgtree.engine.Handle, grp:integer, images:boolean }|nil
 local view = nil
-
-local function graphics_ok()
-  local ok = pcall(function()
-    return vim.ui.img and vim.ui.img._supported({ timeout = 800 })
-  end)
-  return ok and vim.ui.img._supported({ timeout = 800 }) and raster.has_converter()
-end
 
 -- byte column (1-indexed) where the icon sits for a given depth
 local function icon_col(depth)
@@ -74,95 +67,23 @@ local function render_lines()
   vim.bo[view.buf].modifiable = false
 end
 
--- Position/refresh images for currently-visible lines only.
-local function reconcile()
-  if not view or not view.images or not vim.api.nvim_win_is_valid(view.win) then
-    return
-  end
-  local win = view.win
-  local top = vim.fn.line('w0', win)
-  local bot = vim.fn.line('w$', win)
-  local icfg = config.options.icon
-
-  -- Place/move icons whose anchor cell is actually on screen. screenpos()
-  -- returns row==0 when the cell is off-screen — vertically (scrolled past) OR
-  -- horizontally (anchor column scrolled off the left edge). Track exactly
-  -- which lines are currently showable this pass.
-  local want = {}
-  for line = top, bot do
-    local node = view.nodes[line]
-    if node then
-      local pos = vim.fn.screenpos(win, line, icon_col(node.depth))
-      if pos.row > 0 then
-        want[line] = true
-        local id = view.shown[line]
-        if id then
-          vim.ui.img.set(id, { row = pos.row, col = pos.col })
-        else
-          local stem = icons.stem(node.name, node.kind, { open = view.tree:is_expanded(node.path) })
-          local bytes = raster.png_bytes(stem) or raster.png_bytes('file')
-          if bytes then
-            view.shown[line] = vim.ui.img.set(bytes, {
-              row = pos.row,
-              col = pos.col,
-              width = icfg.width,
-              height = icfg.height,
-              zindex = icfg.zindex,
-            })
-          end
-        end
-      end
-    end
-  end
-
-  -- Cull anything shown that is no longer placeable (scrolled off either axis).
-  for line, id in pairs(view.shown) do
-    if not want[line] then
-      vim.ui.img.del(id)
-      view.shown[line] = nil
-    end
-  end
-end
-
-local queued = false
-local function schedule_reconcile()
-  if queued then
-    return
-  end
-  queued = true
-  vim.schedule(function()
-    queued = false
-    reconcile()
-  end)
-end
-
--- Clear all images and the shown map (used before a structural rebuild).
-local function clear_images()
-  if vim.ui.img then
-    vim.ui.img.del(math.huge)
-  end
-  if view then
-    view.shown = {}
-  end
-end
-
--- Full rebuild after a structural change (expand/collapse/refresh).
+-- Full rebuild after a structural change (expand/collapse/refresh): the node
+-- list changed, so re-render text and drop/replace every image.
 local function rebuild()
   view.nodes = view.tree:flatten()
   render_lines()
-  clear_images()
-  schedule_reconcile()
+  if view.engine then
+    view.engine.refresh()
+  end
 end
 
 -- Re-render text (re-truncate to the new width) without re-scanning the tree.
--- Used on window/editor resize.
+-- Used on window/editor resize; the engine re-places images on its own.
 local function relayout()
   if not view then
     return
   end
   render_lines()
-  clear_images()
-  schedule_reconcile()
 end
 
 local function close()
@@ -170,7 +91,9 @@ local function close()
     return
   end
   pcall(vim.api.nvim_del_augroup_by_id, view.grp)
-  clear_images()
+  if view.engine then
+    view.engine.detach()
+  end
   if vim.api.nvim_win_is_valid(view.win) then
     vim.api.nvim_win_close(view.win, true)
   end
@@ -251,10 +174,31 @@ function M.open(root)
     prev_win = prev_win,
     tree = Tree.new(root),
     nodes = {},
-    shown = {},
     grp = grp,
-    images = graphics_ok(),
+    images = engine.supported(),
   }
+
+  -- Weld an icon to each visible line via the shared placement engine. It
+  -- owns its own augroup and self-binds scroll/resize, so render.lua only
+  -- needs to call refresh() after a structural change (expand/collapse).
+  if view.images then
+    view.engine = engine.attach({
+      win = win,
+      buf = buf,
+      name = 'svgtree_view_engine',
+      resolve = function(line)
+        local node = view and view.nodes[line]
+        if not node then
+          return nil
+        end
+        return {
+          col = icon_col(node.depth),
+          stem = icons.stem(node.name, node.kind, { open = view.tree:is_expanded(node.path) }),
+          key = node.path,
+        }
+      end,
+    })
+  end
 
   -- Keymaps.
   map('<CR>', on_enter)
@@ -273,13 +217,8 @@ function M.open(root)
     map(lhs, '<Nop>')
   end
 
-  -- Reposition icons on vertical scroll / cursor movement.
-  vim.api.nvim_create_autocmd({ 'WinScrolled', 'CursorMoved' }, {
-    group = grp,
-    buffer = buf,
-    callback = schedule_reconcile,
-  })
-  -- On resize, the window width changed: re-truncate names, then reposition.
+  -- On resize, the window width changed: re-truncate names. (The engine
+  -- re-places images on its own resize handler.)
   vim.api.nvim_create_autocmd({ 'VimResized', 'WinResized' }, {
     group = grp,
     callback = relayout,
