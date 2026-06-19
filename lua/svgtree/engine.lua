@@ -87,6 +87,10 @@ function M.attach(opts)
   end
   local grp = vim.api.nvim_create_augroup(opts.name or ('svgtree_engine_' .. opts.buf), { clear = true })
   local queued = false
+  -- Bounds the startup retry below (~20 * 30ms ≈ 600ms) so a window that never
+  -- draws can't spin forever.
+  local draw_retries = 0
+  local MAX_DRAW_RETRIES = 20
 
   local handle = {}
 
@@ -99,18 +103,21 @@ function M.attach(opts)
       return
     end
     local win = opts.win
-    local top = vim.fn.line('w0', win)
+    local top = math.max(vim.fn.line('w0', win), 1)
     local bot = vim.fn.line('w$', win)
 
     -- Place/move icons whose anchor cell is actually on screen. screenpos()
     -- returns row==0 when the cell is off-screen — vertically (scrolled past)
     -- OR horizontally — so it doubles as our cull test on both axes.
     local want = {}
+    local wanted, placed = 0, 0
     for line = top, bot do
       local spec = opts.resolve(line)
       if spec and spec.stem then
+        wanted = wanted + 1
         local pos = vim.fn.screenpos(win, line, spec.col)
         if pos.row > 0 then
+          placed = placed + 1
           local key = spec.key or ('#' .. line)
           want[key] = true
           local cur = shown[key]
@@ -145,6 +152,30 @@ function M.attach(opts)
         vim.ui.img.del(cur.id)
         shown[key] = nil
       end
+    end
+
+    -- Startup race: on a cold open the window isn't laid out yet, so
+    -- line('w$') reports a short visible range (often just the cursor line)
+    -- and screenpos() returns row 0 — we place too few icons, or none, and the
+    -- rest only showed up once later activity re-rendered. Detect an
+    -- under-drawn window — its visible bottom is below what the window height
+    -- and line count imply, or we had icons to show but placed none — and retry
+    -- on a short timer until it settles. defer_fn doesn't pump the loop, so
+    -- it's safe here; the cap stops a never-drawn window from spinning forever.
+    local height = vim.api.nvim_win_get_height(win)
+    local line_count = vim.api.nvim_buf_line_count(opts.buf)
+    local expected_bot = math.min(line_count, top + height - 1)
+    -- Fully drawn ⇒ w$ matches the height/line-count, and every on-screen line
+    -- with an icon resolves to a real screen row (placed == wanted). A shortfall
+    -- in either means the window is still painting. (Icons live at a fixed left
+    -- column that h-scroll lock keeps visible, so placed < wanted is never a
+    -- legitimate horizontal cull here.)
+    local under_drawn = bot < expected_bot or placed < wanted
+    if under_drawn and draw_retries < MAX_DRAW_RETRIES then
+      draw_retries = draw_retries + 1
+      vim.defer_fn(reconcile, 30)
+    else
+      draw_retries = 0
     end
   end
 
