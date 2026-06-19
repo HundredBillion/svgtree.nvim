@@ -52,7 +52,18 @@ function M.png_bytes(stem)
   ensure_cache_dir()
   local png = string.format('%s/%s_%d.png', cache_dir, stem, size)
 
-  if vim.fn.filereadable(png) == 0 then
+  -- Treat the cached PNG as stale if the source SVG is newer (e.g. the icon
+  -- pack was updated/swapped after the first rasterization). Keying by name
+  -- alone would otherwise serve the old rendering forever.
+  local fresh = vim.fn.filereadable(png) == 1
+  if fresh then
+    local svg_st, png_st = vim.uv.fs_stat(svg), vim.uv.fs_stat(png)
+    if svg_st and png_st and svg_st.mtime.sec > png_st.mtime.sec then
+      fresh = false
+    end
+  end
+
+  if not fresh then
     local res = vim.system(convert_cmd(svg, png, size), { text = false }):wait()
     if res.code ~= 0 or vim.fn.filereadable(png) == 0 then
       return nil
