@@ -25,20 +25,49 @@ local function icon_col(depth)
   return depth * config.options.indent + 1
 end
 
--- Build buffer text from the flattened node list.
+-- Trim a string to a display-cell budget, appending '…' if it overflows
+-- (VSCode-style). Width-aware, so multibyte names behave.
+local function truncate(s, budget)
+  if budget <= 0 then
+    return ''
+  end
+  if vim.fn.strdisplaywidth(s) <= budget then
+    return s
+  end
+  if budget == 1 then
+    return '…'
+  end
+  local target = budget - 1 -- room for the ellipsis (1 cell)
+  local n = vim.fn.strchars(s)
+  local out = s
+  while n > 0 and vim.fn.strdisplaywidth(out) > target do
+    n = n - 1
+    out = vim.fn.strcharpart(s, 0, n)
+  end
+  return out .. '…'
+end
+
+-- Build buffer text from the flattened node list, truncating names that would
+-- overflow the window so no line is wider than the view (hence no horizontal
+-- scrolling).
 local function render_lines()
   local opts = config.options
+  local width = vim.api.nvim_win_is_valid(view.win) and vim.api.nvim_win_get_width(view.win)
+    or opts.window.width
   local lines = {}
   for _, node in ipairs(view.nodes) do
     local indent = string.rep(' ', node.depth * opts.indent)
     local slot = string.rep(' ', opts.icon.width) .. ' ' -- reserved for the image
-    local suffix = node.kind == 'dir' and '/' or ''
     -- When images are off, show the icon stem as a text tag so it's still usable.
     local tag = ''
     if not view.images and opts.fallback_text then
       tag = '[' .. icons.stem(node.name, node.kind, { open = view.tree:is_expanded(node.path) }) .. '] '
     end
-    lines[#lines + 1] = indent .. slot .. tag .. node.name .. suffix
+    local prefix = indent .. slot .. tag
+    local suffix = node.kind == 'dir' and '/' or ''
+    -- Budget the name to what's left of the window (1-cell right margin).
+    local budget = width - vim.fn.strdisplaywidth(prefix) - 1
+    lines[#lines + 1] = prefix .. truncate(node.name .. suffix, budget)
   end
   vim.bo[view.buf].modifiable = true
   vim.api.nvim_buf_set_lines(view.buf, 0, -1, false, lines)
@@ -50,25 +79,22 @@ local function reconcile()
   if not view or not view.images or not vim.api.nvim_win_is_valid(view.win) then
     return
   end
-  local win, buf = view.win, view.buf
+  local win = view.win
   local top = vim.fn.line('w0', win)
   local bot = vim.fn.line('w$', win)
   local icfg = config.options.icon
 
-  -- Drop icons scrolled out of view.
-  for line, id in pairs(view.shown) do
-    if line < top or line > bot then
-      vim.ui.img.del(id)
-      view.shown[line] = nil
-    end
-  end
-
-  -- Place/move icons for visible lines.
+  -- Place/move icons whose anchor cell is actually on screen. screenpos()
+  -- returns row==0 when the cell is off-screen — vertically (scrolled past) OR
+  -- horizontally (anchor column scrolled off the left edge). Track exactly
+  -- which lines are currently showable this pass.
+  local want = {}
   for line = top, bot do
     local node = view.nodes[line]
     if node then
       local pos = vim.fn.screenpos(win, line, icon_col(node.depth))
       if pos.row > 0 then
+        want[line] = true
         local id = view.shown[line]
         if id then
           vim.ui.img.set(id, { row = pos.row, col = pos.col })
@@ -86,6 +112,14 @@ local function reconcile()
           end
         end
       end
+    end
+  end
+
+  -- Cull anything shown that is no longer placeable (scrolled off either axis).
+  for line, id in pairs(view.shown) do
+    if not want[line] then
+      vim.ui.img.del(id)
+      view.shown[line] = nil
     end
   end
 end
@@ -115,6 +149,17 @@ end
 -- Full rebuild after a structural change (expand/collapse/refresh).
 local function rebuild()
   view.nodes = view.tree:flatten()
+  render_lines()
+  clear_images()
+  schedule_reconcile()
+end
+
+-- Re-render text (re-truncate to the new width) without re-scanning the tree.
+-- Used on window/editor resize.
+local function relayout()
+  if not view then
+    return
+  end
   render_lines()
   clear_images()
   schedule_reconcile()
@@ -218,11 +263,16 @@ function M.open(root)
   map('R', rebuild)
   map('q', close)
 
-  -- Reconcile on anything that can move lines on screen.
-  vim.api.nvim_create_autocmd({ 'WinScrolled', 'CursorMoved', 'VimResized', 'WinResized' }, {
+  -- Reposition icons on vertical scroll / cursor movement.
+  vim.api.nvim_create_autocmd({ 'WinScrolled', 'CursorMoved' }, {
     group = grp,
     buffer = buf,
     callback = schedule_reconcile,
+  })
+  -- On resize, the window width changed: re-truncate names, then reposition.
+  vim.api.nvim_create_autocmd({ 'VimResized', 'WinResized' }, {
+    group = grp,
+    callback = relayout,
   })
   -- Tear down if the window goes away.
   vim.api.nvim_create_autocmd({ 'WinClosed' }, {
