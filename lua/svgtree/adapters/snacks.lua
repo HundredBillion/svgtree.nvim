@@ -144,12 +144,13 @@ function M.format(item, picker)
   return ret
 end
 
----Attach the placement engine when the explorer is shown.
+-- Attach the placement engine for this explorer. Runs OFF the picker's show
+-- (see M.on_show below): probing graphics support blocks via vim.wait and
+-- pumps the event loop, so doing it during the show — especially the
+-- auto-open-at-startup show, against a not-yet-drawn window — garbles that
+-- show and the icons never get placed.
 ---@param picker snacks.Picker
-function M.on_show(picker)
-  -- Probe support lazily, HERE: on_show fires after the first render and after
-  -- startup (see snacks picker:show), so the blocking _supported() probe can't
-  -- re-enter render or other plugins' startup config.
+local function attach(picker)
   if not engine.supported() then
     return
   end
@@ -234,6 +235,36 @@ function M.on_show(picker)
   pcall(function()
     list.dirty = true
     list:update({ force = true })
+  end)
+end
+
+-- Run fn once the editor is past startup and settled. When the explorer
+-- auto-opens at startup, on_show fires mid-startup against a not-yet-drawn
+-- window; deferring to here means the support probe, engine attach, and forced
+-- re-render all happen post-startup against a drawn window — the same settled
+-- conditions as a manual reopen, which is when icons reliably appeared.
+local function on_settled(fn)
+  if vim.v.vim_did_enter == 1 then
+    vim.schedule(fn)
+  else
+    vim.api.nvim_create_autocmd('VimEnter', {
+      once = true,
+      callback = function()
+        vim.schedule(fn)
+      end,
+    })
+  end
+end
+
+---Hook for the explorer's `on_show`. Defers the real work off the show so the
+---blocking probe + forced re-render never collide with startup or the picker's
+---first render.
+---@param picker snacks.Picker
+function M.on_show(picker)
+  on_settled(function()
+    if picker and picker.list then
+      attach(picker)
+    end
   end)
 end
 
