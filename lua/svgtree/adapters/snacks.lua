@@ -72,25 +72,20 @@ end
 ---@param item snacks.picker.explorer.Item
 ---@param picker snacks.Picker
 function M.format(item, picker)
-  local F = require('snacks.picker.format')
-  -- Decide whether to blank the host glyph and reserve an image slot. Never
-  -- probe here: this runs inside snacks' render loop, where a blocking probe
-  -- would corrupt the write.
-  --   * known supported            -> blank (images will be placed)
-  --   * not probed yet but capable -> blank optimistically, so an auto-opened
-  --       explorer doesn't flash the default glyph before the deferred probe +
-  --       placement run; if the probe later says unsupported, attach() forces a
-  --       re-render that restores glyphs
-  --   * probed-unsupported, or not capable -> keep snacks' default glyphs
-  local suppress
-  if engine.supported_cached() then
-    suppress = true
-  elseif not engine.probed() then
-    suppress = engine.capable()
-  else
-    suppress = false
+  -- Never probe here: this runs inside snacks' render loop, where a blocking
+  -- probe would corrupt the write. Decide purely from cached state:
+  --   * image-capable but support not yet determined -> HOLD: render a blank
+  --     line. Showing filenames now and dropping icons in a moment later is the
+  --     "pop" we're avoiding. detect() resolves around first paint, then
+  --     attach() forces a re-render and text + icons appear together. (Held
+  --     before requiring snacks: the blank line needs nothing from it.)
+  --   * determined unsupported (or not capable) -> snacks' default glyphs.
+  --   * determined supported -> build the image line below.
+  if engine.capable() and not engine.probed() then
+    return { { '' } }
   end
-  if not suppress then
+  local F = require('snacks.picker.format')
+  if not engine.supported_cached() then
     return F.file(item, picker)
   end
   local ret = {} ---@type snacks.picker.Highlight[]
@@ -157,22 +152,21 @@ function M.format(item, picker)
   return ret
 end
 
--- Attach the placement engine for this explorer. Runs OFF the picker's show
--- (see M.on_show below): probing graphics support blocks via vim.wait and
--- pumps the event loop, so doing it during the show — especially the
--- auto-open-at-startup show, against a not-yet-drawn window — garbles that
--- show and the icons never get placed.
+-- Attach the placement engine for this explorer. Called from on_show via
+-- engine.on_resolved — i.e. only once support has been determined, so no
+-- blocking probe happens here. For the auto-open case format() held the lines
+-- blank until now; this renders the real content and places icons in the SAME
+-- synchronous pass, so they appear together (no pop).
 ---@param picker snacks.Picker
 local function attach(picker)
-  local ok = engine.supported()
+  local ok = engine.supported_cached()
   local list = picker.list
   if not (list and list.win and list.win.win and list.win.buf) then
     return
   end
   if not ok then
-    -- Probe came back unsupported (e.g. non-graphics terminal). format() may
-    -- have optimistically reserved blank image slots; re-render so it now falls
-    -- back to snacks' default glyphs.
+    -- Determined unsupported (e.g. non-graphics terminal). format() held lines
+    -- blank while pending; re-render so it now falls back to snacks' glyphs.
     pcall(function()
       list.dirty = true
       list:update({ force = true })
@@ -249,39 +243,26 @@ local function attach(picker)
     list._svg_hlock = true
   end
 
-  -- The first render already drew snacks' own glyphs (the support cache wasn't
-  -- primed yet). Force one more render so format() now suppresses them and the
-  -- wrapped render schedules image placement.
+  -- Render the real content (format() now emits filenames + image slots) and
+  -- place icons in the SAME pass: list:update writes the buffer lines, then a
+  -- synchronous reconcile sends the image placements before we yield, so Neovim
+  -- flushes text and icons in one screen update — no pop. (The wrapped render
+  -- also schedules an async reconcile; it's a harmless no-op reposition.)
   pcall(function()
     list.dirty = true
     list:update({ force = true })
+    handle.reconcile()
   end)
 end
 
--- Run fn once the editor is past startup and settled. When the explorer
--- auto-opens at startup, on_show fires mid-startup against a not-yet-drawn
--- window; deferring to here means the support probe, engine attach, and forced
--- re-render all happen post-startup against a drawn window — the same settled
--- conditions as a manual reopen, which is when icons reliably appeared.
-local function on_settled(fn)
-  if vim.v.vim_did_enter == 1 then
-    vim.schedule(fn)
-  else
-    vim.api.nvim_create_autocmd('VimEnter', {
-      once = true,
-      callback = function()
-        vim.schedule(fn)
-      end,
-    })
-  end
-end
-
----Hook for the explorer's `on_show`. Defers the real work off the show so the
----blocking probe + forced re-render never collide with startup or the picker's
----first render.
+---Hook for the explorer's `on_show`. Kicks off async graphics detection (a
+---no-op if already running or resolved) and attaches once support is known.
+---While detection is pending, format() holds the lines blank, so the explorer's
+---first visible content is text + icons together rather than text then a pop-in.
 ---@param picker snacks.Picker
 function M.on_show(picker)
-  on_settled(function()
+  engine.detect()
+  engine.on_resolved(function()
     if picker and picker.list then
       attach(picker)
     end

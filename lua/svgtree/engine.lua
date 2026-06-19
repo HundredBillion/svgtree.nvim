@@ -16,16 +16,113 @@ local raster = require('svgtree.raster')
 
 local M = {}
 
--- `_supported` is a *blocking terminal round-trip* that pumps the event loop.
--- It must NEVER run inside a host's render path (e.g. snacks calls our
--- formatter mid-render with the buffer temporarily modifiable; pumping the
--- loop there lets another render reset `modifiable` and corrupts the write).
--- So we probe exactly once, off the hot path, and everything else reads the
--- cached boolean.
+-- Whether the terminal can render images (kitty graphics protocol).
+--   nil   = not yet determined
+--   true  = supported
+--   false = unsupported / unavailable
+-- Determining this means asking the terminal and reading its reply — a round
+-- trip. vim.ui.img._supported() does that but BLOCKS on the answer via
+-- vim.wait(), which pumps the event loop; running it during startup or inside
+-- a render is unsafe. So our primary path is detect() below, which sends the
+-- same query but resolves on the reply asynchronously — no blocking, safe to
+-- fire at startup. supported() remains as a synchronous fallback.
 local supported_cache = nil
+local detecting = false
 
----Probe (once) whether real-image rendering is available, and cache it.
----Call this from a safe context (startup/idle), NOT from a render callback.
+-- Callbacks to run once support is determined (true or false). Used by hosts
+-- to hold their first render until they know whether to draw icons or glyphs.
+local resolved_listeners = {}
+
+local function fire_resolved()
+  local ls = resolved_listeners
+  resolved_listeners = {}
+  for _, fn in ipairs(ls) do
+    pcall(fn)
+  end
+end
+
+local function resolve(val)
+  if supported_cache == nil then
+    supported_cache = val and raster.has_converter() and true or false
+    detecting = false
+    vim.schedule(fire_resolved)
+  end
+end
+
+-- Mirror of vim.ui.img._kitty's query-id generator so our APC echo id is in the
+-- same space the terminal expects.
+local gen_query_id = (function()
+  local bit = require('bit')
+  local NVIM_PID_BITS = 10
+  local nvim_pid = 0
+  local cnt = 30
+  return function()
+    if nvim_pid == 0 then
+      local pid = vim.fn.getpid()
+      nvim_pid = bit.band(bit.bxor(pid, bit.rshift(pid, 5), bit.rshift(pid, NVIM_PID_BITS)), 0x3FF)
+    end
+    cnt = cnt + 1
+    return bit.bor(bit.lshift(nvim_pid, 24 - NVIM_PID_BITS), cnt)
+  end
+end)()
+
+---Asynchronously determine image support, without blocking. Sends the kitty
+---graphics query APC and resolves on the terminal's reply (or a short timeout)
+---via callback — no vim.wait, so it's safe to call during startup. Idempotent:
+---a no-op once detection is in flight or already resolved. Fire this as early
+---as the UI allows so the answer is ready around the first paint.
+---@param opts? { timeout?: integer }
+function M.detect(opts)
+  if supported_cache ~= nil or detecting then
+    return
+  end
+  -- Cheap disqualifiers: no API/converter, or a terminal that echoes unknown
+  -- sequences (mirrors vim.ui.img._kitty) — resolve to false without querying.
+  if not M.capable() then
+    return resolve(false)
+  end
+  if vim.env.TERM_PROGRAM == 'Apple_Terminal' then
+    return resolve(false)
+  end
+  if not (vim.tty and vim.tty.query_apc) then
+    return -- no async path; leave undetermined for a later supported() fallback
+  end
+
+  detecting = true
+  local timeout = (opts and opts.timeout) or 250
+  local query_id = gen_query_id()
+  local query = string.format('\027_Ga=q,i=%d,s=1,v=1\027\\', query_id)
+  pcall(vim.tty.query_apc, query, { timeout = timeout }, function(resp)
+    -- kitty APC reply: \027_G...i=<id>...;<status>
+    local id = resp:match('^\027_G[^;]*i=(%d+)')
+    local status = resp:match(';(.-)%s*$')
+    if id and tonumber(id) == query_id and status then
+      resolve(true)
+      return true
+    end
+  end)
+  -- The callback only fires on a positive match, so resolve to false if the
+  -- terminal stays silent past the window.
+  vim.defer_fn(function()
+    resolve(false)
+  end, timeout + 100)
+end
+
+---Run fn once support is determined. Calls immediately (next tick) if already
+---known; otherwise queues it for when detect()/supported() resolves.
+---@param fn fun()
+function M.on_resolved(fn)
+  if supported_cache ~= nil then
+    vim.schedule(fn)
+  else
+    resolved_listeners[#resolved_listeners + 1] = fn
+  end
+end
+
+---Synchronous fallback probe. BLOCKS on a terminal round-trip via vim.wait()
+---(pumps the event loop), so call only from a safe, user-triggered, post-startup
+---context (e.g. opening svgtree's own tree) — never from a render or startup.
+---Prefer detect() + on_resolved() for the auto-open path.
 ---@return boolean
 function M.supported()
   if supported_cache ~= nil then
@@ -35,17 +132,18 @@ function M.supported()
     return vim.ui.img ~= nil and vim.ui.img._supported({ timeout = 800 }) == true
   end)
   supported_cache = (ok and res and raster.has_converter()) or false
+  vim.schedule(fire_resolved)
   return supported_cache
 end
 
----Non-blocking read of the cached support result. Returns false until
----`supported()` has been called once. Safe to call from any hot path.
+---Non-blocking read of the cached support result. Returns false until support
+---has been determined. Safe to call from any hot path.
 ---@return boolean
 function M.supported_cached()
   return supported_cache == true
 end
 
----Has the support probe run yet, regardless of its result?
+---Has support been determined yet (true or false), regardless of result?
 ---@return boolean
 function M.probed()
   return supported_cache ~= nil
@@ -53,9 +151,8 @@ end
 
 ---Cheap, synchronous capability check — no terminal round-trip. True if this
 ---build could render images at all (vim.ui.img present + a converter on PATH).
----Lets a host suppress its glyph on the very FIRST render, before the blocking
----probe has run, so an auto-opened explorer doesn't flash glyphs before images
----land. Actual placement still waits on supported().
+---Lets a host hold its first render while detect() is still pending, instead of
+---committing to glyphs-or-icons before the answer is known.
 ---@return boolean
 function M.capable()
   return vim.ui.img ~= nil and raster.has_converter()
