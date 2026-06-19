@@ -184,13 +184,15 @@ function M.attach(opts)
   if #events > 0 then
     vim.api.nvim_create_autocmd(events, { group = grp, buffer = opts.buf, callback = schedule })
   end
-  -- A width change can't move the anchor column (icons live at a fixed column),
-  -- but the safest thing is to re-place from scratch.
+  -- On resize we only *reposition*, never clear+recreate. A width change can't
+  -- move an icon's anchor column (icons live at a fixed byte column, near the
+  -- left edge), so reconcile recomputes screenpos and nudges each still-visible
+  -- image via the cheap flicker-free update path. Clearing here (del all +
+  -- re-transmit bytes) made every icon flash during a continuous edge-drag,
+  -- since WinResized fires once per drag step.
   vim.api.nvim_create_autocmd({ 'VimResized', 'WinResized' }, {
     group = grp,
-    callback = function()
-      handle.refresh()
-    end,
+    callback = schedule,
   })
   vim.api.nvim_create_autocmd({ 'WinClosed' }, {
     group = grp,
