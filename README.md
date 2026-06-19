@@ -78,12 +78,57 @@ require("svgtree").setup({
 
 The bundled icons are a small original starter set. To use richer icons, point `pack` at any directory of SVGs named `<stem>.svg` (matching the stems in `lua/svgtree/icons.lua`, e.g. `python.svg`, `typescript.svg`, `directory.svg`). A converter for the [VSCode Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) pack is on the roadmap.
 
+## Use the icon engine in snacks.nvim / neo-tree
+
+svgtree's icon machinery is a **host-agnostic engine** you can attach to an
+existing explorer to get real SVG icons there — no need to switch to svgtree's
+own tree. Call `require("svgtree").setup({})` once, then wire an adapter.
+
+### snacks.nvim explorer
+
+The adapter suppresses snacks' own glyph (keeping git/diagnostic decorations)
+and overlays an anchored image in its place.
+
+```lua
+-- lua/plugins/snacks.lua
+opts = {
+  picker = {
+    sources = {
+      explorer = {
+        format  = require("svgtree.adapters.snacks").format,
+        on_show = require("svgtree.adapters.snacks").on_show,
+      },
+    },
+  },
+}
+```
+
+### neo-tree.nvim (experimental)
+
+```lua
+require("neo-tree").setup({
+  default_component_configs = {
+    icon = { provider = function(icon)        -- blank neo-tree's glyph, keep width
+      icon.text, icon.highlight = "  ", "NeoTreeFileIcon"
+    end },
+  },
+  event_handlers = {
+    { event = "after_render", handler = require("svgtree.adapters.neotree").on_render },
+  },
+})
+-- If the icon lands a cell off, tune it:
+-- require("svgtree.adapters.neotree").setup({ col_offset = 1 })
+```
+
+Both require Neovim ≥ 0.13, a Kitty-graphics terminal, and a converter (see
+Requirements). When unavailable, the adapters no-op and the host renders as
+usual.
+
 ## How it works
 
 1. **Resolve** each file/dir to an icon stem (`icons.lua`).
-2. **Rasterize** that stem's SVG to a cached PNG at cell size (`raster.lua`, via ImageMagick).
-3. **Render** the tree as text, reserving cells for each icon (`render.lua`).
-4. **Anchor**: on scroll/resize, recompute each visible line's screen position and reposition its image via `vim.ui.img.set` — the shim that makes images track text.
+2. **Rasterize** that stem's SVG to a cached PNG at cell size (`raster.lua`, via rsvg-convert/ImageMagick).
+3. **Place + anchor** (`engine.lua`): for each visible line, compute the icon's screen position with `screenpos`, draw it with `vim.ui.img.set`, and reposition/cull on scroll & resize. This engine is shared by svgtree's own tree (`render.lua`) and the snacks/neo-tree adapters (`adapters/`).
 
 ## Roadmap
 
