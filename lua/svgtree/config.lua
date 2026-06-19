@@ -4,6 +4,10 @@ local M = {}
 local defaults = {
   -- Directory containing the SVG icon pack. Defaults to the bundled set.
   pack = nil, -- resolved to <plugin>/assets/icons at setup if nil
+  -- Optional resolver override: { dir, dir_open, file, by_name, by_ext,
+  -- by_folder, by_folder_open }. nil = built-in starter mapping. See
+  -- svgtree.packs.material for the generated VSCode/Material map.
+  icon_map = nil,
   -- Icon footprint in terminal cells and the pixel size to rasterize to.
   icon = {
     width = 2, -- cells
@@ -18,6 +22,9 @@ local defaults = {
   },
   indent = 2, -- spaces per depth level
   show_hidden = false, -- show dotfiles
+  -- Pre-rasterize the entire pack on setup. Leave false for large packs
+  -- (Material) — icons rasterize on demand and cache to disk anyway.
+  warm = false,
   -- Fall back to plain text labels when the terminal can't display images.
   -- (A future version can fall back to Nerd Font glyphs instead.)
   fallback_text = true,
