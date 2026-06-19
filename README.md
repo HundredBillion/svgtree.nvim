@@ -25,7 +25,7 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
-  "yourname/svgtree.nvim",
+  "HundredBillion/svgtree.nvim",
   opts = {},
   cmd = { "SvgTree", "SvgTreeToggle" },
   keys = {
