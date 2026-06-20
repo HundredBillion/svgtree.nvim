@@ -1,13 +1,13 @@
--- Rasterizes SVG icons to PNG (via ImageMagick) and caches them on disk.
--- Each unique (stem, size) is converted at most once; subsequent runs are
--- instant cache hits. Returns the raw PNG bytes for vim.ui.img.
+-- Rasterizes SVG icons to PNG (via rsvg-convert/ImageMagick) and caches them on
+-- disk. Each unique (stem, size) is converted at most once; subsequent runs are
+-- instant cache hits. Returns the on-disk PNG path -- the kitty placeholder
+-- backend transmits icons by file path.
 
 local config = require('svgtree.config')
 
 local M = {}
 
 local cache_dir = vim.fn.stdpath('cache') .. '/svgtree'
-local mem = {} -- stem -> png bytes (in-memory cache for the session)
 local path_mem = {} -- stem -> on-disk png path (verified present this session)
 
 local function ensure_cache_dir()
@@ -76,29 +76,13 @@ function M.png_path(stem)
   return png
 end
 
----Return PNG bytes for an icon stem, rasterizing+caching on first use.
----@param stem string
----@return string? bytes nil if the SVG is missing or conversion failed
-function M.png_bytes(stem)
-  if mem[stem] then
-    return mem[stem]
-  end
-  local png = M.png_path(stem)
-  if not png then
-    return nil
-  end
-  local bytes = vim.fn.readblob(png)
-  mem[stem] = bytes
-  return bytes
-end
-
 ---Pre-rasterize every icon in the pack so later placement never blocks.
 function M.warm()
   local opts = config.options
   local files = vim.fn.globpath(opts.pack, '*.svg', false, true)
   for _, svg in ipairs(files) do
     local stem = vim.fn.fnamemodify(svg, ':t:r')
-    M.png_bytes(stem)
+    M.png_path(stem)
   end
 end
 

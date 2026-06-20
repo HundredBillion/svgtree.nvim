@@ -1,7 +1,8 @@
--- The view: owns the tree window/buffer, renders node lines, and keeps an
--- image icon welded to each visible line via the anchoring shim
--- (extmark-free variant: line<->buffer-row is stable between rebuilds, so we
--- reconcile by visible range and reposition with vim.ui.img on scroll).
+-- The view: owns the tree window/buffer, renders node lines, and welds an SVG
+-- image icon to each line via the shared placement engine (svgtree.engine, which
+-- uses kitty Unicode placeholders). Because each icon is ordinary buffer text it
+-- scrolls with its line and repaints on redraw for free; the view only rebuilds
+-- the text and calls the engine to re-place icons after a structural change.
 
 local config = require('svgtree.config')
 local engine = require('svgtree.engine')
