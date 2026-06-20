@@ -121,10 +121,12 @@ function M.format(item, picker)
   end
 
   -- The image anchors at this column. A *real* space slot gives it a byte
-  -- column screenpos() can resolve (virtual text has none).
+  -- column screenpos() can resolve (virtual text has none). The trailing space
+  -- sits past the icon's `w` cells, so it reads as a gap between icon and
+  -- filename (mirrors render.lua's own-tree slot) for VSCode-style breathing room.
   local w = ((picker.opts.formatters or {}).file or {}).icon_width or 2
   item._svg_icon_col = col
-  add({ { string.rep(' ', w) } })
+  add({ { string.rep(' ', w) .. ' ' } })
 
   -- Filename with snacks' own glyph suppressed (we draw the image over it).
   local files = picker.opts.icons.files
