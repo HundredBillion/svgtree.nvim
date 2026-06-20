@@ -40,7 +40,7 @@ Out of the box you get a small bundled icon set. For the full Material or vscode
 
 ## Use it
 
-1. Open a project in nightly Neovim:
+1. Open a project using the nightly Neovim variant:
 
    ```bash
    nvim-nightly .
@@ -51,6 +51,10 @@ Out of the box you get a small bundled icon set. For the full Material or vscode
    ```vim
    :SvgTree
    ```
+
+   Already using the snacks.nvim explorer? You don't need svgtree's tree —
+   wire the adapter (see [Use the icon engine in snacks.nvim / neo-tree](#use-the-icon-engine-in-snacksnvim--neo-tree))
+   and your icons appear in the explorer you already open (e.g. `<leader>e`).
 
 3. **You should see your icons!**
 
