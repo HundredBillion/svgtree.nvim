@@ -60,7 +60,7 @@ Defaults:
 
 ```lua
 require("svgtree").setup({
-  pack = nil,            -- path to an SVG icon pack; nil = bundled set
+  pack = nil,            -- nil = bundled set; a name = ~/.local/share/nvim/svgtree/packs/<name>; or an absolute pack dir
   icon = {
     width = 2,           -- icon footprint in cells
     height = 1,
@@ -70,15 +70,40 @@ require("svgtree").setup({
   window = { width = 36, side = "left" },
   indent = 2,
   show_hidden = false,
-  fallback_text = true,  -- show [stem] tags when images are unavailable
+  fallback_text = true,  -- show [id] tags when images are unavailable
 })
 ```
 
-### Using the VSCode Material icon pack
+### Using an icon pack
 
-The bundled icons are a small original starter set. To use richer icons, point `pack` at any directory of SVGs named `<stem>.svg` (matching the stems in `lua/svgtree/icons.lua`, e.g. `python.svg`, `typescript.svg`, `directory.svg`).
+svgtree reads **any VSCode file-icon theme directly** — it ships a small original
+starter set and reads a theme's own JSON in place; it stores no pack data.
 
-For the full [VSCode Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) pack, run `scripts/install-material.sh`: it fetches the SVGs from the published `material-icon-theme` npm package and generates the resolver in `lua/svgtree/packs/material_map.lua` from the theme's manifest. svgtree does not bundle those SVGs (see [Credits](#credits)).
+**Install one (needs `curl` + `unzip`):**
+
+```bash
+scripts/install-theme.sh PKief.material-icon-theme material
+scripts/install-theme.sh vscode-icons-team.vscode-icons vscode-icons
+```
+
+```lua
+require("svgtree").setup({ pack = "material" })
+```
+
+These download the theme's `.vsix` from [Open VSX](https://open-vsx.org/) and
+unpack it to `stdpath('data')/svgtree/packs/<name>/`.
+
+**Bring your own:** point `pack` at any unpacked VSCode icon-theme directory —
+including one already installed under `~/.vscode/extensions/`:
+
+```lua
+require("svgtree").setup({ pack = "/abs/path/to/an/unpacked/icon-theme" })
+```
+
+No import or conversion step — svgtree reads the theme's `iconDefinitions` and
+`fileExtensions`/`fileNames`/`folderNames` directly. (It maps by extension, file
+name, and folder name; VSCode `languageIds`, light/high-contrast variants, and
+font-based icons are not used.)
 
 ## Use the icon engine in snacks.nvim / neo-tree
 
@@ -135,7 +160,7 @@ usual.
 
 ## Roadmap
 
-- [x] VSCode Material Icon Theme pack importer
+- [x] Read any VSCode file-icon theme directly (Material, vscode-icons, … via Open VSX)
 - [x] Transmit each icon once and reuse its placement (Kitty Unicode-placeholder engine)
 - [ ] Nerd Font glyph fallback (instead of text tags)
 - [ ] Git status / diagnostics decorations
@@ -145,10 +170,8 @@ usual.
 
 Born from a deep-dive into whether VSCode-style SVG icons are possible in terminal Neovim. Built on [`vim.ui.img`](https://github.com/neovim/neovim/pull/37914) by [@chipsenkbeil](https://github.com/chipsenkbeil) and the Neovim team.
 
-The Material icon pack is the [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) by Philipp Kief and contributors, licensed [MIT](https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE.md). svgtree does not bundle its SVGs; `scripts/install-material.sh` fetches them from the published [`material-icon-theme`](https://www.npmjs.com/package/material-icon-theme) npm package and generates the resolver in `lua/svgtree/packs/material_map.lua` from the theme's manifest.
+The Material icon pack is the [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) by Philipp Kief and contributors ([MIT](https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE.md)); vscode-icons is by the [vscode-icons team](https://github.com/vscode-icons/vscode-icons) (MIT). svgtree bundles neither — `scripts/install-theme.sh` fetches them from [Open VSX](https://open-vsx.org/) on demand and reads each theme in place.
 
 ## License
 
 MIT © David Lee
-
-The bundled Material resolver data (`lua/svgtree/packs/material_map.lua`) is derived from the Material Icon Theme manifest and remains under its original MIT license (see Credits).
