@@ -1,10 +1,10 @@
 # svgtree.nvim
 
-A minimal Neovim file explorer that renders **real SVG icons as images** — not font glyphs — using Neovim's native [`vim.ui.img`](https://github.com/neovim/neovim/pull/37914) API and a terminal that speaks the Kitty graphics protocol.
+A minimal Neovim file explorer that renders **real SVG icons as images** — not font glyphs — using the **Kitty graphics protocol** on a terminal that speaks it.
 
 > Font glyphs are one shape in one color per cell, so they can't show a two-tone icon (e.g. the blue-and-yellow Python logo). Real images can. `svgtree.nvim` is a proof that VSCode-style, full-color, multi-tone file icons are possible in a **terminal** Neovim — no GUI required.
 
-https://github.com/neovim/neovim/pull/37914 landed `vim.ui.img` in Neovim 0.13. The catch: it places images at **absolute screen coordinates** with no buffer anchoring, so icons don't follow text when you scroll. svgtree.nvim solves that with a small pure-Lua **anchoring shim** (recompute each visible line's screen position on scroll/resize and reposition its image) — which means no Neovim fork and no core patch are required.
+The hard part of putting an image in a text buffer is keeping it welded to its line: absolute screen placement (what [`vim.ui.img`](https://github.com/neovim/neovim/pull/37914) does) isn't anchored to text, so a redraw wipes it and a scroll leaves it behind. svgtree.nvim sidesteps that by rendering through the Kitty graphics protocol's **Unicode-placeholder** mechanism: each icon is transmitted once, then drawn as ordinary buffer cells that the terminal paints the image over. Because the anchor *is* buffer text, the icon scrolls with its line and is repainted on every redraw for free — no fork, no core patch, no scroll/resize bookkeeping. Neovim's `vim.ui.img` is still used, but only as the capability probe that gates on the 0.13+ runtime.
 
 ## Status
 
@@ -60,7 +60,7 @@ Defaults:
 
 ```lua
 require("svgtree").setup({
-  pack = nil,            -- path to an SVG icon pack; nil = bundled set
+  pack = nil,            -- nil = bundled set; a name = ~/.local/share/nvim/svgtree/packs/<name>; or an absolute pack dir
   icon = {
     width = 2,           -- icon footprint in cells
     height = 1,
@@ -70,13 +70,40 @@ require("svgtree").setup({
   window = { width = 36, side = "left" },
   indent = 2,
   show_hidden = false,
-  fallback_text = true,  -- show [stem] tags when images are unavailable
+  fallback_text = true,  -- show [id] tags when images are unavailable
 })
 ```
 
-### Using the VSCode Material icon pack
+### Using an icon pack
 
-The bundled icons are a small original starter set. To use richer icons, point `pack` at any directory of SVGs named `<stem>.svg` (matching the stems in `lua/svgtree/icons.lua`, e.g. `python.svg`, `typescript.svg`, `directory.svg`). A converter for the [VSCode Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) pack is on the roadmap.
+svgtree reads **any VSCode file-icon theme directly** — it ships a small original
+starter set and reads a theme's own JSON in place; it stores no pack data.
+
+**Install one (needs `curl` + `unzip`):**
+
+```bash
+scripts/install-theme.sh PKief.material-icon-theme material
+scripts/install-theme.sh vscode-icons-team.vscode-icons vscode-icons
+```
+
+```lua
+require("svgtree").setup({ pack = "material" })
+```
+
+These download the theme's `.vsix` from [Open VSX](https://open-vsx.org/) and
+unpack it to `stdpath('data')/svgtree/packs/<name>/`.
+
+**Bring your own:** point `pack` at any unpacked VSCode icon-theme directory —
+including one already installed under `~/.vscode/extensions/`:
+
+```lua
+require("svgtree").setup({ pack = "/abs/path/to/an/unpacked/icon-theme" })
+```
+
+No import or conversion step — svgtree reads the theme's `iconDefinitions` and
+`fileExtensions`/`fileNames`/`folderNames` directly. (It maps by extension, file
+name, and folder name; VSCode `languageIds`, light/high-contrast variants, and
+font-based icons are not used.)
 
 ## Use the icon engine in snacks.nvim / neo-tree
 
@@ -127,14 +154,15 @@ usual.
 ## How it works
 
 1. **Resolve** each file/dir to an icon stem (`icons.lua`).
-2. **Rasterize** that stem's SVG to a cached PNG at cell size (`raster.lua`, via rsvg-convert/ImageMagick).
-3. **Place + anchor** (`engine.lua`): for each visible line, compute the icon's screen position with `screenpos`, draw it with `vim.ui.img.set`, and reposition/cull on scroll & resize. This engine is shared by svgtree's own tree (`render.lua`) and the snacks/neo-tree adapters (`adapters/`).
+2. **Rasterize** that stem's SVG to a cached PNG at cell size (`raster.lua`, via rsvg-convert/ImageMagick). Each `(stem, size)` is converted at most once and reused from disk.
+3. **Transmit + place** (`kitty.lua`): send each unique icon's PNG to the terminal once (by file path) and create a *virtual* Unicode-placeholder placement for it — an image id carried in a highlight's foreground color, the placement id in its underline color.
+4. **Anchor** (`engine.lua`): for each visible line, draw the icon as an overlay extmark whose virtual text is Kitty placeholder cells (U+10EEEE) referencing that placement. The terminal paints the image over those cells. Since the cells are buffer text, the icon moves and repaints on its own — the engine just re-emits placeholder cells on a structural change. This engine is shared by svgtree's own tree (`render.lua`) and the snacks/neo-tree adapters (`adapters/`), and a `winlock` seam keeps the tree window from panning sideways so icons never slide off their anchor column.
 
 ## Roadmap
 
-- [x] VSCode Material Icon Theme pack importer
+- [x] Read any VSCode file-icon theme directly (Material, vscode-icons, … via Open VSX)
+- [x] Transmit each icon once and reuse its placement (Kitty Unicode-placeholder engine)
 - [ ] Nerd Font glyph fallback (instead of text tags)
-- [ ] Transmit-each-icon-once optimization (reuse placements vs re-sending bytes)
 - [ ] Git status / diagnostics decorations
 - [ ] Upstream: a buffer/extmark-anchored placement option for `vim.ui.img`
 
@@ -142,10 +170,8 @@ usual.
 
 Born from a deep-dive into whether VSCode-style SVG icons are possible in terminal Neovim. Built on [`vim.ui.img`](https://github.com/neovim/neovim/pull/37914) by [@chipsenkbeil](https://github.com/chipsenkbeil) and the Neovim team.
 
-The Material icon pack is the [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) by Philipp Kief and contributors, licensed [MIT](https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE.md). svgtree does not bundle its SVGs; `scripts/install-material.sh` fetches them from the published [`material-icon-theme`](https://www.npmjs.com/package/material-icon-theme) npm package and generates the resolver in `lua/svgtree/packs/material_map.lua` from the theme's manifest.
+The Material icon pack is the [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) by Philipp Kief and contributors ([MIT](https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE.md)); vscode-icons is by the [vscode-icons team](https://github.com/vscode-icons/vscode-icons) (MIT). svgtree bundles neither — `scripts/install-theme.sh` fetches them from [Open VSX](https://open-vsx.org/) on demand and reads each theme in place.
 
 ## License
 
 MIT © David Lee
-
-The bundled Material resolver data (`lua/svgtree/packs/material_map.lua`) is derived from the Material Icon Theme manifest and remains under its original MIT license (see Credits).

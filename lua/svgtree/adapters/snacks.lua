@@ -32,6 +32,42 @@ local icons = require('svgtree.icons')
 
 local M = {}
 
+-- Minimal local descriptions of the snacks.nvim picker shapes this adapter
+-- reads from and writes to. svgtree only *optionally* integrates with snacks, so
+-- its real types aren't available to the language server; these document exactly
+-- the fields we touch -- including the `_svg_*` fields we inject ourselves.
+
+---@class svgtree.snacks.Item
+---@field file string
+---@field dir? boolean
+---@field open? boolean
+---@field label? string
+---@field parent? any
+---@field status? any
+---@field severity? any
+---@field _svg_icon_col? integer injected by M.format for the engine to read
+
+---@class svgtree.snacks.ListWin
+---@field win integer
+---@field buf integer
+
+---@class svgtree.snacks.List
+---@field win svgtree.snacks.ListWin
+---@field visible svgtree.snacks.Item[]
+---@field dirty boolean
+---@field render function
+---@field update function
+---@field _svg_wrapped? boolean injected: render() wrapped once
+---@field _svg_hlock? boolean injected: horizontal-scroll lock installed
+
+---@class svgtree.snacks.PickerOpts
+---@field formatters? table
+---@field icons table
+
+---@class svgtree.snacks.Picker
+---@field list? svgtree.snacks.List
+---@field opts svgtree.snacks.PickerOpts
+
 -- picker -> engine handle (weak, so closed pickers get collected)
 local attached = setmetatable({}, { __mode = 'k' })
 -- picker -> true once attach() is ready to render text + icons together. format()
@@ -39,7 +75,6 @@ local attached = setmetatable({}, { __mode = 'k' })
 -- content already has icons (no text-then-icon pop). Keyed weakly by picker.
 local ready = setmetatable({}, { __mode = 'k' })
 
----@param item snacks.picker.explorer.Item
 -- Trim a string to a display-cell budget, appending '…' if it overflows
 -- (VSCode-style end-truncation). Width-aware, so multibyte names behave.
 local function truncate(s, budget)
@@ -62,7 +97,8 @@ local function truncate(s, budget)
   return out .. '…'
 end
 
----@return string stem
+---@param item svgtree.snacks.Item
+---@return string? stem
 local function stem_for(item)
   local name = vim.fn.fnamemodify(item.file, ':t')
   if item.dir then
@@ -74,8 +110,8 @@ end
 ---Replacement explorer formatter: identical to snacks' default file format,
 ---minus the devicon, plus a reserved real-space slot we anchor the image into.
 ---Records the slot's byte column on the item for the engine to read.
----@param item snacks.picker.explorer.Item
----@param picker snacks.Picker
+---@param item svgtree.snacks.Item
+---@param picker svgtree.snacks.Picker
 function M.format(item, picker)
   -- Never probe here: this runs inside snacks' render loop, where a blocking
   -- probe would corrupt the write. Decide purely from cached state:
@@ -94,7 +130,7 @@ function M.format(item, picker)
   if not capability.supported_cached() then
     return F.file(item, picker)
   end
-  local ret = {} ---@type snacks.picker.Highlight[]
+  local ret = {} ---@type table[]
   local col = 1 -- 1-indexed byte column of the next *real* character
 
   local function add(els)
@@ -165,12 +201,13 @@ end
 -- blocking probe happens here. For the auto-open case format() held the lines
 -- blank until now; this renders the real content and places icons in the SAME
 -- synchronous pass, so they appear together (no pop).
----@param picker snacks.Picker
+---@param picker svgtree.snacks.Picker
 local function attach(picker)
   local ok = capability.supported_cached()
   local list = picker.list
-  local list_ok = list and list.win and list.win.win and list.win.buf
-  if not list_ok then
+  -- Need the list's window+buffer handles to attach; bail (format() falls back)
+  -- if absent. Inlining the check narrows `list` to non-nil for the rest.
+  if not (list and list.win and list.win.win and list.win.buf) then
     return
   end
   if not ok then
@@ -182,9 +219,10 @@ local function attach(picker)
     end)
     return
   end
-  if not config.options.pack then
+  if not config.options.resolved then
     config.setup({})
   end
+  -- Window+buffer handles (guaranteed present by the guard above).
   local win, buf = list.win.win, list.win.buf
 
   if attached[picker] then
@@ -271,7 +309,7 @@ end
 ---known terminals; a no-op if already running), then attaches once BOTH startup
 ---is done and support is determined. format() holds the lines blank until attach
 ---flips `ready`, so the first visible content is text + icons together.
----@param picker snacks.Picker
+---@param picker svgtree.snacks.Picker
 function M.on_show(picker)
   capability.detect()
   when_entered(function()

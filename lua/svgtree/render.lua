@@ -47,6 +47,9 @@ end
 -- overflow the window so no line is wider than the view (hence no horizontal
 -- scrolling).
 local function render_lines()
+  if not view then
+    return
+  end
   local opts = config.options
   local width = vim.api.nvim_win_is_valid(view.win) and vim.api.nvim_win_get_width(view.win)
     or opts.window.width
@@ -54,10 +57,14 @@ local function render_lines()
   for _, node in ipairs(view.nodes) do
     local indent = string.rep(' ', node.depth * opts.indent)
     local slot = string.rep(' ', opts.icon.width) .. ' ' -- reserved for the image
-    -- When images are off, show the icon stem as a text tag so it's still usable.
+    -- When images are off, show the icon id as a text tag so it's still usable.
+    -- A nil id (theme maps this entry to no icon) yields no tag.
     local tag = ''
     if not view.images and opts.fallback_text then
-      tag = '[' .. icons.stem(node.name, node.kind, { open = view.tree:is_expanded(node.path) }) .. '] '
+      local s = icons.stem(node.name, node.kind, { open = view.tree:is_expanded(node.path) })
+      if s then
+        tag = '[' .. s .. '] '
+      end
     end
     local prefix = indent .. slot .. tag
     local suffix = node.kind == 'dir' and '/' or ''
@@ -73,6 +80,9 @@ end
 -- Full rebuild after a structural change (expand/collapse/refresh): the node
 -- list changed, so re-render text and drop/replace every image.
 local function rebuild()
+  if not view then
+    return
+  end
   view.nodes = view.tree:flatten()
   render_lines()
   if view.engine then
@@ -105,6 +115,9 @@ end
 
 -- Open the file/dir under the cursor.
 local function on_enter()
+  if not view then
+    return
+  end
   local line = vim.api.nvim_win_get_cursor(view.win)[1]
   local node = view.nodes[line]
   if not node then
@@ -125,6 +138,9 @@ local function on_enter()
 end
 
 local function on_collapse()
+  if not view then
+    return
+  end
   local line = vim.api.nvim_win_get_cursor(view.win)[1]
   local node = view.nodes[line]
   if node and node.kind == 'dir' and view.tree:is_expanded(node.path) then
@@ -134,6 +150,9 @@ local function on_collapse()
 end
 
 local function map(lhs, fn)
+  if not view then
+    return
+  end
   vim.keymap.set('n', lhs, fn, { buffer = view.buf, nowait = true, silent = true })
 end
 

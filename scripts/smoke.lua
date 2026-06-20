@@ -9,8 +9,8 @@ local icons = require('svgtree.icons')
 local raster = require('svgtree.raster')
 local Tree = require('svgtree.tree')
 
-print('pack: ' .. config.options.pack)
-assert(vim.fn.isdirectory(config.options.pack) == 1, 'pack dir missing')
+print('pack dir: ' .. config.options.resolved.dir)
+assert(vim.fn.isdirectory(config.options.resolved.dir) == 1, 'pack dir missing')
 
 -- Resolver checks.
 local cases = {

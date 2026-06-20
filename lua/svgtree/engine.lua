@@ -23,7 +23,7 @@ local kitty = require('svgtree.kitty')
 local M = {}
 
 ---@class svgtree.engine.Spec
----@field stem string icon stem (resolves to <pack>/<stem>.svg)
+---@field stem string? icon stem (resolves to <pack>/<stem>.svg)
 ---@field col integer 1-indexed *byte* column the icon anchors to
 ---@field key? string stable item identity (e.g. a path) for reuse across
 ---  scroll/redraw; falls back to the line number when omitted
@@ -74,7 +74,10 @@ function M.attach(opts)
     if rec then
       return rec
     end
-    local png = raster.png_path(stem) or raster.png_path('file')
+    -- Runtime fallback: the active theme's own default-file id, not a literal
+    -- 'file' (which may not exist in this theme). nil if the theme defines none.
+    local default_file = config.options.resolved and config.options.resolved.theme.file
+    local png = raster.png_path(stem) or (default_file and raster.png_path(default_file))
     if not png then
       return nil
     end
