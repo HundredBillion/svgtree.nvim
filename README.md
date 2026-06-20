@@ -1,10 +1,10 @@
 # svgtree.nvim
 
-A minimal Neovim file explorer that renders **real SVG icons as images** — not font glyphs — using Neovim's native [`vim.ui.img`](https://github.com/neovim/neovim/pull/37914) API and a terminal that speaks the Kitty graphics protocol.
+A minimal Neovim file explorer that renders **real SVG icons as images** — not font glyphs — using the **Kitty graphics protocol** on a terminal that speaks it.
 
 > Font glyphs are one shape in one color per cell, so they can't show a two-tone icon (e.g. the blue-and-yellow Python logo). Real images can. `svgtree.nvim` is a proof that VSCode-style, full-color, multi-tone file icons are possible in a **terminal** Neovim — no GUI required.
 
-https://github.com/neovim/neovim/pull/37914 landed `vim.ui.img` in Neovim 0.13. The catch: it places images at **absolute screen coordinates** with no buffer anchoring, so icons don't follow text when you scroll. svgtree.nvim solves that with a small pure-Lua **anchoring shim** (recompute each visible line's screen position on scroll/resize and reposition its image) — which means no Neovim fork and no core patch are required.
+The hard part of putting an image in a text buffer is keeping it welded to its line: absolute screen placement (what [`vim.ui.img`](https://github.com/neovim/neovim/pull/37914) does) isn't anchored to text, so a redraw wipes it and a scroll leaves it behind. svgtree.nvim sidesteps that by rendering through the Kitty graphics protocol's **Unicode-placeholder** mechanism: each icon is transmitted once, then drawn as ordinary buffer cells that the terminal paints the image over. Because the anchor *is* buffer text, the icon scrolls with its line and is repainted on every redraw for free — no fork, no core patch, no scroll/resize bookkeeping. Neovim's `vim.ui.img` is still used, but only as the capability probe that gates on the 0.13+ runtime.
 
 ## Status
 
@@ -76,7 +76,9 @@ require("svgtree").setup({
 
 ### Using the VSCode Material icon pack
 
-The bundled icons are a small original starter set. To use richer icons, point `pack` at any directory of SVGs named `<stem>.svg` (matching the stems in `lua/svgtree/icons.lua`, e.g. `python.svg`, `typescript.svg`, `directory.svg`). A converter for the [VSCode Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) pack is on the roadmap.
+The bundled icons are a small original starter set. To use richer icons, point `pack` at any directory of SVGs named `<stem>.svg` (matching the stems in `lua/svgtree/icons.lua`, e.g. `python.svg`, `typescript.svg`, `directory.svg`).
+
+For the full [VSCode Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) pack, run `scripts/install-material.sh`: it fetches the SVGs from the published `material-icon-theme` npm package and generates the resolver in `lua/svgtree/packs/material_map.lua` from the theme's manifest. svgtree does not bundle those SVGs (see [Credits](#credits)).
 
 ## Use the icon engine in snacks.nvim / neo-tree
 
@@ -127,14 +129,15 @@ usual.
 ## How it works
 
 1. **Resolve** each file/dir to an icon stem (`icons.lua`).
-2. **Rasterize** that stem's SVG to a cached PNG at cell size (`raster.lua`, via rsvg-convert/ImageMagick).
-3. **Place + anchor** (`engine.lua`): for each visible line, compute the icon's screen position with `screenpos`, draw it with `vim.ui.img.set`, and reposition/cull on scroll & resize. This engine is shared by svgtree's own tree (`render.lua`) and the snacks/neo-tree adapters (`adapters/`).
+2. **Rasterize** that stem's SVG to a cached PNG at cell size (`raster.lua`, via rsvg-convert/ImageMagick). Each `(stem, size)` is converted at most once and reused from disk.
+3. **Transmit + place** (`kitty.lua`): send each unique icon's PNG to the terminal once (by file path) and create a *virtual* Unicode-placeholder placement for it — an image id carried in a highlight's foreground color, the placement id in its underline color.
+4. **Anchor** (`engine.lua`): for each visible line, draw the icon as an overlay extmark whose virtual text is Kitty placeholder cells (U+10EEEE) referencing that placement. The terminal paints the image over those cells. Since the cells are buffer text, the icon moves and repaints on its own — the engine just re-emits placeholder cells on a structural change. This engine is shared by svgtree's own tree (`render.lua`) and the snacks/neo-tree adapters (`adapters/`), and a `winlock` seam keeps the tree window from panning sideways so icons never slide off their anchor column.
 
 ## Roadmap
 
 - [x] VSCode Material Icon Theme pack importer
+- [x] Transmit each icon once and reuse its placement (Kitty Unicode-placeholder engine)
 - [ ] Nerd Font glyph fallback (instead of text tags)
-- [ ] Transmit-each-icon-once optimization (reuse placements vs re-sending bytes)
 - [ ] Git status / diagnostics decorations
 - [ ] Upstream: a buffer/extmark-anchored placement option for `vim.ui.img`
 
