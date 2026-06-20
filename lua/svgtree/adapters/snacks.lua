@@ -62,7 +62,7 @@ local function truncate(s, budget)
   return out .. '…'
 end
 
----@return string stem
+---@return string? stem
 local function stem_for(item)
   local name = vim.fn.fnamemodify(item.file, ':t')
   if item.dir then
@@ -182,7 +182,7 @@ local function attach(picker)
     end)
     return
   end
-  if not config.options.pack then
+  if not config.options.resolved then
     config.setup({})
   end
   local win, buf = list.win.win, list.win.buf

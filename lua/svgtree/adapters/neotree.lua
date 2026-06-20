@@ -41,7 +41,7 @@ end
 local handles = {}
 
 ---@param node table neo-tree NuiNode
----@return string stem
+---@return string? stem
 local function stem_for(node)
   if node.type == 'directory' then
     return node:is_expanded() and 'directory_open' or 'directory'
@@ -62,7 +62,7 @@ function M.on_render(args)
   if not capability.supported_cached() then
     return
   end
-  if not config.options.pack then
+  if not config.options.resolved then
     config.setup({})
   end
 
