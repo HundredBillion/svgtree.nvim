@@ -66,6 +66,23 @@ local gen_query_id = (function()
   end
 end)()
 
+-- Does the environment identify a terminal known to support the kitty graphics
+-- protocol? Lets us resolve support instantly, with no terminal round-trip, for
+-- the common emulators. Conservative: unknowns fall through to the async query.
+local function known_graphics_terminal()
+  local term = (vim.env.TERM or ''):lower()
+  if term:find('kitty', 1, true) or term:find('ghostty', 1, true) then
+    return true
+  end
+  local prog = (vim.env.TERM_PROGRAM or ''):lower()
+  if prog == 'ghostty' or prog == 'wezterm' then
+    return true
+  end
+  return vim.env.KITTY_WINDOW_ID ~= nil
+    or vim.env.GHOSTTY_RESOURCES_DIR ~= nil
+    or vim.env.WEZTERM_EXECUTABLE ~= nil
+end
+
 ---Asynchronously determine image support, without blocking. Sends the kitty
 ---graphics query APC and resolves on the terminal's reply (or a short timeout)
 ---via callback — no vim.wait, so it's safe to call during startup. Idempotent:
@@ -83,6 +100,14 @@ function M.detect(opts)
   end
   if vim.env.TERM_PROGRAM == 'Apple_Terminal' then
     return resolve(false)
+  end
+  -- Fast path: a terminal that advertises kitty-graphics support in the
+  -- environment (Kitty, Ghostty, WezTerm). Resolve synchronously — no round
+  -- trip — so the explorer never waits on a reply. This is what collapses the
+  -- first-paint blank beat to a single redraw tick. The async query below is
+  -- only the fallback for terminals we can't identify up front.
+  if known_graphics_terminal() then
+    return resolve(true)
   end
   if not (vim.tty and vim.tty.query_apc) then
     return -- no async path; leave undetermined for a later supported() fallback

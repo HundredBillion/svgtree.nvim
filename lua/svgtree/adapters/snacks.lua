@@ -33,6 +33,10 @@ local M = {}
 
 -- picker -> engine handle (weak, so closed pickers get collected)
 local attached = setmetatable({}, { __mode = 'k' })
+-- picker -> true once attach() is ready to render text + icons together. format()
+-- holds its lines blank until this flips, so the explorer's first visible
+-- content already has icons (no text-then-icon pop). Keyed weakly by picker.
+local ready = setmetatable({}, { __mode = 'k' })
 
 ---@param item snacks.picker.explorer.Item
 -- Trim a string to a display-cell budget, appending '…' if it overflows
@@ -74,14 +78,15 @@ end
 function M.format(item, picker)
   -- Never probe here: this runs inside snacks' render loop, where a blocking
   -- probe would corrupt the write. Decide purely from cached state:
-  --   * image-capable but support not yet determined -> HOLD: render a blank
-  --     line. Showing filenames now and dropping icons in a moment later is the
-  --     "pop" we're avoiding. detect() resolves around first paint, then
-  --     attach() forces a re-render and text + icons appear together. (Held
+  --   * image-capable, not yet known-unsupported, and this picker isn't ready
+  --     to draw icons -> HOLD: render a blank line. Showing filenames now and
+  --     dropping icons in a moment later is the "pop" we're avoiding. attach()
+  --     flips `ready` and re-renders, placing text + icons in one pass. (Held
   --     before requiring snacks: the blank line needs nothing from it.)
   --   * determined unsupported (or not capable) -> snacks' default glyphs.
-  --   * determined supported -> build the image line below.
-  if engine.capable() and not engine.probed() then
+  --   * ready + supported -> build the image line below.
+  local determined_unsupported = engine.probed() and not engine.supported_cached()
+  if engine.capable() and not determined_unsupported and not ready[picker] then
     return { { '' } }
   end
   local F = require('snacks.picker.format')
@@ -244,10 +249,11 @@ local function attach(picker)
   end
 
   -- Render the real content (format() now emits filenames + image slots) and
-  -- place icons in the SAME pass: list:update writes the buffer lines, then a
-  -- synchronous reconcile sends the image placements before we yield, so Neovim
-  -- flushes text and icons in one screen update — no pop. (The wrapped render
-  -- also schedules an async reconcile; it's a harmless no-op reposition.)
+  -- place icons in the SAME pass: flip `ready` so format stops holding, write
+  -- the buffer lines, then a synchronous reconcile sends the image placements
+  -- before we yield, so Neovim flushes text and icons in one screen update — no
+  -- pop. (The wrapped render also schedules an async reconcile; harmless no-op.)
+  ready[picker] = true
   pcall(function()
     list.dirty = true
     list:update({ force = true })
