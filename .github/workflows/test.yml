@@ -1,0 +1,27 @@
+name: tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # rsvg-convert lets the raster test exercise real SVG -> PNG conversion
+      # instead of skipping its body.
+      - name: Install SVG converter (rsvg-convert)
+        run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
+
+      - name: Set up Neovim nightly
+        uses: rhysd/action-setup-vim@v1
+        id: nvim
+        with:
+          neovim: true
+          version: nightly
+
+      - name: Run headless test suite
+        run: SVGTREE_NVIM='${{ steps.nvim.outputs.executable }}' bash scripts/test.sh
