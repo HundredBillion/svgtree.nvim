@@ -17,6 +17,10 @@ fi
 PUB="${ID%%.*}"
 NAME="${ID#*.}"
 PACKNAME="${PACKNAME:-$NAME}"
+if [[ ! "$PACKNAME" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  echo "error: pack-name must be alphanumeric/dot/hyphen (got: $PACKNAME)" >&2
+  exit 2
+fi
 
 for bin in curl unzip; do
   command -v "$bin" >/dev/null 2>&1 || { echo "error: '$bin' not found on PATH" >&2; exit 2; }

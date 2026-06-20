@@ -37,7 +37,7 @@ end
 
 ---Open the tree. @param root? string defaults to cwd
 function M.open(root)
-  if not config.options.pack then
+  if not config.options.resolved then
     config.setup({})
   end
   render.open(root)

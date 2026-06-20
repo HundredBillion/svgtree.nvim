@@ -1,5 +1,5 @@
 -- Rasterizes SVG icons to PNG (via rsvg-convert/ImageMagick) and caches them on
--- disk. Each unique (stem, size) is converted at most once; subsequent runs are
+-- disk. Each unique (iconId, size) is converted at most once; subsequent runs are
 -- instant cache hits. Returns the on-disk PNG path -- the kitty placeholder
 -- backend transmits icons by file path.
 
@@ -8,7 +8,7 @@ local config = require('svgtree.config')
 local M = {}
 
 local cache_dir = vim.fn.stdpath('cache') .. '/svgtree'
-local path_mem = {} -- stem -> on-disk png path (verified present this session)
+local path_mem = {} -- iconId -> on-disk png path (verified present this session)
 
 local function ensure_cache_dir()
   if vim.fn.isdirectory(cache_dir) == 0 then
