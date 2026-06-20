@@ -4,11 +4,19 @@
 
 ## The problem this solves
 
-I've always been bothered that I can't use my favorite VSCode file icons in Neovim.
+I've always been bothered that I can't use my favorite VSCode file svg icons in Neovim.
 
-In the terminal, file trees draw icons as **font glyphs** — and a glyph is one shape in one color per cell. So the blue-and-yellow Python logo, the colorful Material icons, the whole VSCode look: impossible. You get a flat, single-color approximation at best.
+Why? because terminals can't display svg. So we are stuck with font glyphs which can only render a boring one color icon. The blue-and-yellow Python logo, the colorful Material icons, the whole VSCode look is impossible...until now.
 
 svgtree.nvim fixes that. It renders the **actual SVG icons as real, full-color images**, welded to each line of the tree, using the Kitty graphics protocol. Install it and your VSCode icons show up in Neovim — no GUI required.
+
+#### Before — font glyphs
+
+![Before: flat, single-color font glyphs](assets/screenshots/before.png)
+
+#### After — real SVG icons
+
+![After: full-color SVG file icons](assets/screenshots/after.png)
 
 > ⚠️ **Experimental** proof-of-concept (it leans on Neovim's experimental `vim.ui.img` API). It's a working demo that VSCode-style icons are possible in a terminal, not yet a neo-tree replacement.
 
@@ -168,13 +176,6 @@ The hard part of putting an image in a text buffer is keeping it welded to its l
 
 `vim.ui.img` is still used — but only as the capability probe that gates on the 0.13+ runtime.
 
-## Roadmap
-
-- [x] Read any VSCode file-icon theme directly (Material, vscode-icons, … via Open VSX)
-- [x] Transmit each icon once and reuse its placement (Kitty Unicode-placeholder engine)
-- [ ] Nerd Font glyph fallback (instead of text tags)
-- [ ] Git status / diagnostics decorations
-- [ ] Upstream: a buffer/extmark-anchored placement option for `vim.ui.img`
 
 ## Credits
 
