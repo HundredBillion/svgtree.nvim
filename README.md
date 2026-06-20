@@ -4,9 +4,9 @@
 
 ## The problem this solves
 
-I've always been bothered that I can't use my favorite VSCode file svg icons in Neovim.
+I've always been bothered that I can't use my favorite VSCode SVG file icons in Neovim.
 
-Why? because terminals can't display svg. So we are stuck with font glyphs which can only render a boring one color icon. The blue-and-yellow Python logo, the colorful Material icons, the whole VSCode look is impossible...until now.
+Why? Because terminals can't display SVG. So we're stuck with font glyphs, which can only render a boring one-color icon. The blue-and-yellow Python logo, the colorful Material icons, the whole VSCode look is impossible... until now.
 
 svgtree.nvim fixes that. It renders the **actual SVG icons as real, full-color images**, welded to each line of the tree, using the Kitty graphics protocol. Install it and your VSCode icons show up in Neovim — no GUI required.
 
