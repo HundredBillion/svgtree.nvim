@@ -20,10 +20,11 @@ svgtree.nvim fixes that. It renders the **actual SVG icons as real, full-color i
 - **A terminal that speaks the Kitty graphics protocol** — [Ghostty](https://ghostty.org/), [Kitty](https://sw.kovidgoyal.net/kitty/), or [WezTerm](https://wezfurlong.org/wezterm/).
 - **An SVG → PNG converter** — `rsvg-convert` (recommended, renders fonts reliably): `brew install librsvg`. ImageMagick (`magick`) also works.
 
-**The plugin** — with [lazy.nvim](https://github.com/folke/lazy.nvim):
+**The plugin** — with [lazy.nvim](https://github.com/folke/lazy.nvim), create a new file at `~/.config/nvim/lua/plugins/svgtree.lua` containing:
 
 ```lua
-{
+-- ~/.config/nvim/lua/plugins/svgtree.lua
+return {
   "HundredBillion/svgtree.nvim",
   opts = {},
   cmd = { "SvgTree", "SvgTreeToggle" },
@@ -32,6 +33,8 @@ svgtree.nvim fixes that. It renders the **actual SVG icons as real, full-color i
   },
 }
 ```
+
+(lazy.nvim auto-loads every `.lua` file under `~/.config/nvim/lua/plugins/`, so the filename is up to you — `svgtree.lua` just keeps things tidy.)
 
 Out of the box you get a small bundled icon set. For the full Material or vscode-icons themes, see [Icon packs](#icon-packs) below.
 
