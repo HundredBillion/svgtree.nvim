@@ -166,7 +166,8 @@ end
 local function attach(picker)
   local ok = engine.supported_cached()
   local list = picker.list
-  if not (list and list.win and list.win.win and list.win.buf) then
+  local list_ok = list and list.win and list.win.win and list.win.buf
+  if not list_ok then
     return
   end
   if not ok then
@@ -204,13 +205,19 @@ local function attach(picker)
   })
 
   -- The list has no public render event; wrap the instance method once so we
-  -- reconcile after every redraw it performs.
+  -- re-anchor icons after every line rewrite it performs. Reconcile
+  -- SYNCHRONOUSLY here (not via the debounced schedule): snacks "scrolls" by
+  -- rewriting the buffer lines, and the icons ARE buffer cells now, so they must
+  -- be re-emitted in the same pass — before the redraw that follows this render.
+  -- A deferred reconcile would lag one frame behind every scroll step, blinking
+  -- the icons off then back on. The reconcile is cheap (clear ns + set extmarks),
+  -- so doing it inline is fine.
   if not list._svg_wrapped then
     local orig = list.render
     list.render = function(self, ...)
       local r = orig(self, ...)
       if attached[picker] then
-        attached[picker].schedule()
+        attached[picker].reconcile()
       end
       return r
     end

@@ -1,18 +1,24 @@
--- The placement engine: keeps a rasterized icon image welded to a buffer line,
--- repositioning it on scroll/resize via vim.ui.img. This is the host-agnostic
--- core — svgtree's own tree and the neo-tree/snacks adapters all drive it the
--- same way. A host supplies four things through `attach`:
+-- The placement engine: welds a rasterized icon to a buffer line using the
+-- kitty Unicode-placeholder protocol (see svgtree.kitty). Each icon's PNG is
+-- transmitted once and given a virtual placement; the icon is then drawn by
+-- writing placeholder cells (U+10EEEE) into the line as an overlay extmark.
+-- Because the anchor is ordinary buffer text, the icon scrolls with its line
+-- and is repainted by the terminal on every redraw — for free. This is the
+-- host-agnostic core — svgtree's own tree and the neo-tree/snacks adapters all
+-- drive it the same way. A host supplies through `attach`:
 --   * win, buf            — where to draw
 --   * resolve(line)        — for a (1-indexed) buffer line, the icon to show
 --                            and the byte column it anchors to, or nil
 --   * events (optional)    — autocmds that should trigger a reconcile
 --
--- Each attachment owns its own image ids and augroup, so several engines can
--- coexist (e.g. svgtree's tree and a snacks explorer in another window) without
--- culling each other's images.
+-- Each attachment owns its own image ids, extmark namespace, and augroup, so
+-- several engines can coexist (e.g. svgtree's tree and a snacks explorer)
+-- without disturbing each other. Re-attaching re-transmits, so reopening a
+-- view is a clean recovery path if the terminal ever drops image bytes.
 
 local config = require('svgtree.config')
 local raster = require('svgtree.raster')
+local kitty = require('svgtree.kitty')
 
 local M = {}
 
@@ -209,26 +215,17 @@ end
 ---@return svgtree.engine.Handle
 function M.attach(opts)
   local icon = opts.icon or config.options.icon
-  local events = opts.events or { 'WinScrolled', 'CursorMoved' }
-  -- Keyed by STABLE ITEM IDENTITY (resolve's `key`, e.g. a path), NOT by line.
-  -- Hosts like snacks "scroll" by rewriting buffer lines in place, so a given
-  -- line holds different items over time. Keying by identity means a scroll
-  -- just *repositions* each still-visible image (vim.ui.img.set(id,…) hits the
-  -- terminal's flicker-free update path — no byte re-transmit); only items
-  -- entering/leaving the viewport are created/deleted.
-  local shown = {} ---@type table<string, { id:integer, stem:string }>
-  local function del_all()
-    for key, cur in pairs(shown) do
-      pcall(vim.ui.img.del, cur.id)
-      shown[key] = nil
-    end
-  end
-  local grp = vim.api.nvim_create_augroup(opts.name or ('svgtree_engine_' .. opts.buf), { clear = true })
+  local events = opts.events or { 'CursorMoved' }
+  local name = opts.name or ('svgtree_engine_' .. opts.buf)
+  -- One namespace holds all our placeholder extmarks; one augroup, our autocmds.
+  local ns = vim.api.nvim_create_namespace(name)
+  local grp = vim.api.nvim_create_augroup(name, { clear = true })
+  -- stem -> { id, pid }: each unique icon is transmitted and given a virtual
+  -- placement exactly once per attachment. Placeholder cells reference it by id,
+  -- so one transmit paints the icon on every line that shows it. A fresh attach
+  -- builds a fresh table and re-transmits — the reopen recovery path.
+  local imgs = {} ---@type table<string, { id:integer, pid:integer }>
   local queued = false
-  -- Bounds the startup retry below (~20 * 30ms ≈ 600ms) so a window that never
-  -- draws can't spin forever.
-  local draw_retries = 0
-  local MAX_DRAW_RETRIES = 20
 
   local handle = {}
 
@@ -236,84 +233,66 @@ function M.attach(opts)
     return vim.api.nvim_win_is_valid(opts.win) and vim.api.nvim_buf_is_valid(opts.buf)
   end
 
+  -- Transmit + virtually-place an icon stem once; cache and reuse its ids.
+  ---@param stem string
+  ---@return { id:integer, pid:integer }?
+  local function image_for(stem)
+    local rec = imgs[stem]
+    if rec then
+      return rec
+    end
+    local png = raster.png_path(stem) or raster.png_path('file')
+    if not png then
+      return nil
+    end
+    local id = kitty.transmit(png)
+    local pid = kitty.place(id, icon.width, icon.height)
+    rec = { id = id, pid = pid }
+    imgs[stem] = rec
+    return rec
+  end
+
+  -- Remove every placeholder extmark and free each transmitted image. Ids are
+  -- unique to this attachment, so deleting them can't disturb another engine.
+  local function del_all()
+    if vim.api.nvim_buf_is_valid(opts.buf) then
+      vim.api.nvim_buf_clear_namespace(opts.buf, ns, 0, -1)
+    end
+    for stem, rec in pairs(imgs) do
+      pcall(kitty.delete, rec.id)
+      imgs[stem] = nil
+    end
+  end
+
+  -- Re-anchor every visible icon. With placeholders there is no screen-position
+  -- tracking, redraw-recovery, or startup-race retry (all of which the absolute
+  -- engine needed and still couldn't make reliable on a cold open): we just
+  -- clear our extmarks and re-emit one overlay per resolvable line. The terminal
+  -- repaints from the buffer cells on its own. Cheap enough to run per redraw.
   local function reconcile()
     if not valid() then
       return
     end
-    local win = opts.win
-    local top = math.max(vim.fn.line('w0', win), 1)
-    local bot = vim.fn.line('w$', win)
-
-    -- Place/move icons whose anchor cell is actually on screen. screenpos()
-    -- returns row==0 when the cell is off-screen — vertically (scrolled past)
-    -- OR horizontally — so it doubles as our cull test on both axes.
-    local want = {}
-    local wanted, placed = 0, 0
-    for line = top, bot do
+    local buf = opts.buf
+    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+    local line_count = vim.api.nvim_buf_line_count(buf)
+    for line = 1, line_count do
       local spec = opts.resolve(line)
       if spec and spec.stem then
-        wanted = wanted + 1
-        local pos = vim.fn.screenpos(win, line, spec.col)
-        if pos.row > 0 then
-          placed = placed + 1
-          local key = spec.key or ('#' .. line)
-          want[key] = true
-          local cur = shown[key]
-          if cur and cur.stem == spec.stem then
-            -- Same item still visible: cheap reposition (no byte re-transmit).
-            vim.ui.img.set(cur.id, { row = pos.row, col = pos.col })
-          else
-            -- New item, or same item whose icon changed (e.g. folder open):
-            -- (re)create. This only happens at the viewport edges on scroll.
-            if cur then
-              vim.ui.img.del(cur.id)
-              shown[key] = nil
-            end
-            local bytes = raster.png_bytes(spec.stem) or raster.png_bytes('file')
-            if bytes then
-              local id = vim.ui.img.set(bytes, {
-                row = pos.row,
-                col = pos.col,
-                width = icon.width,
-                height = icon.height,
-                zindex = icon.zindex,
-              })
-              shown[key] = { id = id, stem = spec.stem }
-            end
-          end
+        local rec = image_for(spec.stem)
+        if rec then
+          -- 1-indexed byte column -> 0-indexed extmark column. Overlaying at the
+          -- byte position lets Neovim compute the display column, so a multibyte
+          -- tree-guide prefix can't misalign the icon.
+          local col = math.max((spec.col or 1) - 1, 0)
+          pcall(vim.api.nvim_buf_set_extmark, buf, ns, line - 1, col, {
+            virt_text = kitty.virt_text(rec.id, rec.pid, icon.width, 1),
+            virt_text_pos = 'overlay',
+            hl_mode = 'combine',
+            priority = icon.zindex or 50,
+          })
         end
       end
-    end
-
-    for key, cur in pairs(shown) do
-      if not want[key] then
-        vim.ui.img.del(cur.id)
-        shown[key] = nil
-      end
-    end
-
-    -- Startup race: on a cold open the window isn't laid out yet, so
-    -- line('w$') reports a short visible range (often just the cursor line)
-    -- and screenpos() returns row 0 — we place too few icons, or none, and the
-    -- rest only showed up once later activity re-rendered. Detect an
-    -- under-drawn window — its visible bottom is below what the window height
-    -- and line count imply, or we had icons to show but placed none — and retry
-    -- on a short timer until it settles. defer_fn doesn't pump the loop, so
-    -- it's safe here; the cap stops a never-drawn window from spinning forever.
-    local height = vim.api.nvim_win_get_height(win)
-    local line_count = vim.api.nvim_buf_line_count(opts.buf)
-    local expected_bot = math.min(line_count, top + height - 1)
-    -- Fully drawn ⇒ w$ matches the height/line-count, and every on-screen line
-    -- with an icon resolves to a real screen row (placed == wanted). A shortfall
-    -- in either means the window is still painting. (Icons live at a fixed left
-    -- column that h-scroll lock keeps visible, so placed < wanted is never a
-    -- legitimate horizontal cull here.)
-    local under_drawn = bot < expected_bot or placed < wanted
-    if under_drawn and draw_retries < MAX_DRAW_RETRIES then
-      draw_retries = draw_retries + 1
-      vim.defer_fn(reconcile, 30)
-    else
-      draw_retries = 0
     end
   end
 
@@ -353,16 +332,6 @@ function M.attach(opts)
   if #events > 0 then
     vim.api.nvim_create_autocmd(events, { group = grp, buffer = opts.buf, callback = schedule })
   end
-  -- On resize we only *reposition*, never clear+recreate. A width change can't
-  -- move an icon's anchor column (icons live at a fixed byte column, near the
-  -- left edge), so reconcile recomputes screenpos and nudges each still-visible
-  -- image via the cheap flicker-free update path. Clearing here (del all +
-  -- re-transmit bytes) made every icon flash during a continuous edge-drag,
-  -- since WinResized fires once per drag step.
-  vim.api.nvim_create_autocmd({ 'VimResized', 'WinResized' }, {
-    group = grp,
-    callback = schedule,
-  })
   vim.api.nvim_create_autocmd({ 'WinClosed' }, {
     group = grp,
     callback = function(args)

@@ -8,6 +8,7 @@ local M = {}
 
 local cache_dir = vim.fn.stdpath('cache') .. '/svgtree'
 local mem = {} -- stem -> png bytes (in-memory cache for the session)
+local path_mem = {} -- stem -> on-disk png path (verified present this session)
 
 local function ensure_cache_dir()
   if vim.fn.isdirectory(cache_dir) == 0 then
@@ -35,12 +36,13 @@ local function convert_cmd(svg, png, size)
   return { bin, '-background', 'none', svg, '-resize', size .. 'x' .. size, png }
 end
 
----Return PNG bytes for an icon stem, rasterizing+caching on first use.
+---Return the on-disk PNG path for an icon stem, rasterizing+caching on first
+---use. This is what the kitty placeholder backend transmits (t=f, by path).
 ---@param stem string
----@return string? bytes nil if the SVG is missing or conversion failed
-function M.png_bytes(stem)
-  if mem[stem] then
-    return mem[stem]
+---@return string? path nil if the SVG is missing or conversion failed
+function M.png_path(stem)
+  if path_mem[stem] then
+    return path_mem[stem]
   end
   local opts = config.options
   local size = opts.icon.size_px
@@ -70,6 +72,21 @@ function M.png_bytes(stem)
     end
   end
 
+  path_mem[stem] = png
+  return png
+end
+
+---Return PNG bytes for an icon stem, rasterizing+caching on first use.
+---@param stem string
+---@return string? bytes nil if the SVG is missing or conversion failed
+function M.png_bytes(stem)
+  if mem[stem] then
+    return mem[stem]
+  end
+  local png = M.png_path(stem)
+  if not png then
+    return nil
+  end
   local bytes = vim.fn.readblob(png)
   mem[stem] = bytes
   return bytes
