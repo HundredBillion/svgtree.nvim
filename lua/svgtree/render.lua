@@ -8,6 +8,7 @@ local engine = require('svgtree.engine')
 local capability = require('svgtree.capability')
 local icons = require('svgtree.icons')
 local Tree = require('svgtree.tree')
+local winlock = require('svgtree.winlock')
 
 local M = {}
 
@@ -208,38 +209,15 @@ function M.open(root)
   map('R', rebuild)
   map('q', close)
 
-  -- A file tree never pans sideways: neutralize the horizontal-scroll inputs
-  -- (incl. Mac trackpad horizontal swipes -> ScrollWheelLeft/Right).
-  for _, lhs in ipairs({
-    'zh', 'zl', 'zH', 'zL',
-    '<ScrollWheelLeft>', '<ScrollWheelRight>',
-    '<S-ScrollWheelLeft>', '<S-ScrollWheelRight>',
-  }) do
-    map(lhs, '<Nop>')
-  end
+  -- A file tree never pans sideways. One shared seam locks horizontal scroll
+  -- (keymaps + a leftcol-snap on view.grp, torn down with the view on close).
+  winlock.lock_horizontal(win, buf, grp)
 
   -- On resize, the window width changed: re-truncate names. (The engine
   -- re-places images on its own resize handler.)
   vim.api.nvim_create_autocmd({ 'VimResized', 'WinResized' }, {
     group = grp,
     callback = relayout,
-  })
-  -- Safety net: if anything still pans the view sideways, snap it back.
-  vim.api.nvim_create_autocmd('WinScrolled', {
-    group = grp,
-    buffer = buf,
-    callback = function()
-      if not (view and vim.api.nvim_win_is_valid(view.win)) then
-        return
-      end
-      vim.api.nvim_win_call(view.win, function()
-        local v = vim.fn.winsaveview()
-        if v.leftcol and v.leftcol ~= 0 then
-          v.leftcol = 0
-          vim.fn.winrestview(v)
-        end
-      end)
-    end,
   })
   -- Tear down if the window goes away.
   vim.api.nvim_create_autocmd({ 'WinClosed' }, {

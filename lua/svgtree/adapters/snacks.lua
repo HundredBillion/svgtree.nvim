@@ -231,28 +231,7 @@ local function attach(picker)
   -- slide icons off their anchor column). Lock it on the list buffer — neutralize
   -- the horizontal-scroll inputs and snap leftcol back to 0. Once per list.
   if not list._svg_hlock then
-    for _, lhs in ipairs({
-      'zh', 'zl', 'zH', 'zL',
-      '<ScrollWheelLeft>', '<ScrollWheelRight>',
-      '<S-ScrollWheelLeft>', '<S-ScrollWheelRight>',
-    }) do
-      pcall(vim.keymap.set, 'n', lhs, '<Nop>', { buffer = buf, nowait = true, silent = true })
-    end
-    vim.api.nvim_create_autocmd('WinScrolled', {
-      buffer = buf,
-      callback = function()
-        if not vim.api.nvim_win_is_valid(win) then
-          return
-        end
-        vim.api.nvim_win_call(win, function()
-          local v = vim.fn.winsaveview()
-          if v.leftcol and v.leftcol ~= 0 then
-            v.leftcol = 0
-            vim.fn.winrestview(v)
-          end
-        end)
-      end,
-    })
+    require('svgtree.winlock').lock_horizontal(win, buf)
     list._svg_hlock = true
   end
 
