@@ -29,6 +29,7 @@ local config = require('svgtree.config')
 local engine = require('svgtree.engine')
 local capability = require('svgtree.capability')
 local icons = require('svgtree.icons')
+local text = require('svgtree.text')
 
 local M = {}
 
@@ -74,28 +75,6 @@ local attached = setmetatable({}, { __mode = 'k' })
 -- holds its lines blank until this flips, so the explorer's first visible
 -- content already has icons (no text-then-icon pop). Keyed weakly by picker.
 local ready = setmetatable({}, { __mode = 'k' })
-
--- Trim a string to a display-cell budget, appending '…' if it overflows
--- (VSCode-style end-truncation). Width-aware, so multibyte names behave.
-local function truncate(s, budget)
-  if budget <= 0 then
-    return ''
-  end
-  if vim.fn.strdisplaywidth(s) <= budget then
-    return s
-  end
-  if budget == 1 then
-    return '…'
-  end
-  local target = budget - 1 -- room for the ellipsis (1 cell)
-  local n = vim.fn.strchars(s)
-  local out = s
-  while n > 0 and vim.fn.strdisplaywidth(out) > target do
-    n = n - 1
-    out = vim.fn.strcharpart(s, 0, n)
-  end
-  return out .. '…'
-end
 
 ---@param item svgtree.snacks.Item
 ---@return string? stem
@@ -186,7 +165,7 @@ function M.format(item, picker)
       el[1] = ''
       el.field = nil
       el.resolve = function(avail)
-        return { { truncate(name, math.max(avail - 1, 1)), hl, field = 'file' } }
+        return { { text.truncate(name, math.max(avail - 1, 1)), hl, field = 'file' } }
       end
       break
     end

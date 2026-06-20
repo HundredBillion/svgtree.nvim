@@ -20,7 +20,7 @@ fi
 
 cd "$(dirname "$0")/.." || exit 2
 
-scripts=(scripts/test-capability.lua scripts/test-winlock.lua scripts/test-raster.lua scripts/test-pack.lua)
+scripts=(scripts/test-capability.lua scripts/test-winlock.lua scripts/test-raster.lua scripts/test-pack.lua scripts/test-tree.lua scripts/test-truncate.lua)
 fail=0
 for s in "${scripts[@]}"; do
   [ -f "$s" ] || continue        # a script is added by the Task that introduces it
