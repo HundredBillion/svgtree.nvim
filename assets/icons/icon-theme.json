@@ -1,0 +1,42 @@
+{
+  "iconDefinitions": {
+    "file": { "iconPath": "./file.svg" },
+    "directory": { "iconPath": "./directory.svg" },
+    "directory_open": { "iconPath": "./directory_open.svg" },
+    "css": { "iconPath": "./css.svg" },
+    "git": { "iconPath": "./git.svg" },
+    "go": { "iconPath": "./go.svg" },
+    "html": { "iconPath": "./html.svg" },
+    "image": { "iconPath": "./image.svg" },
+    "javascript": { "iconPath": "./javascript.svg" },
+    "json": { "iconPath": "./json.svg" },
+    "lock": { "iconPath": "./lock.svg" },
+    "lua": { "iconPath": "./lua.svg" },
+    "markdown": { "iconPath": "./markdown.svg" },
+    "python": { "iconPath": "./python.svg" },
+    "ruby": { "iconPath": "./ruby.svg" },
+    "rust": { "iconPath": "./rust.svg" },
+    "shell": { "iconPath": "./shell.svg" },
+    "toml": { "iconPath": "./toml.svg" },
+    "typescript": { "iconPath": "./typescript.svg" },
+    "yaml": { "iconPath": "./yaml.svg" }
+  },
+  "file": "file",
+  "folder": "directory",
+  "folderExpanded": "directory_open",
+  "fileExtensions": {
+    "lua": "lua", "py": "python", "js": "javascript", "mjs": "javascript",
+    "cjs": "javascript", "jsx": "javascript", "ts": "typescript", "tsx": "typescript",
+    "json": "json", "jsonc": "json", "md": "markdown", "markdown": "markdown",
+    "html": "html", "htm": "html", "css": "css", "scss": "css", "rb": "ruby",
+    "go": "go", "rs": "rust", "sh": "shell", "bash": "shell", "zsh": "shell",
+    "yaml": "yaml", "yml": "yaml", "toml": "toml", "lock": "lock", "png": "image",
+    "jpg": "image", "jpeg": "image", "gif": "image", "webp": "image", "svg": "image"
+  },
+  "fileNames": {
+    ".gitignore": "git", ".gitattributes": "git", ".gitmodules": "git",
+    "gemfile": "ruby", "gemfile.lock": "lock", "cargo.toml": "rust",
+    "cargo.lock": "lock", "package.json": "json", "package-lock.json": "lock",
+    "go.mod": "go", "go.sum": "lock", "makefile": "shell"
+  }
+}
