@@ -54,10 +54,14 @@ local function render_lines()
   for _, node in ipairs(view.nodes) do
     local indent = string.rep(' ', node.depth * opts.indent)
     local slot = string.rep(' ', opts.icon.width) .. ' ' -- reserved for the image
-    -- When images are off, show the icon stem as a text tag so it's still usable.
+    -- When images are off, show the icon id as a text tag so it's still usable.
+    -- A nil id (theme maps this entry to no icon) yields no tag.
     local tag = ''
     if not view.images and opts.fallback_text then
-      tag = '[' .. icons.stem(node.name, node.kind, { open = view.tree:is_expanded(node.path) }) .. '] '
+      local s = icons.stem(node.name, node.kind, { open = view.tree:is_expanded(node.path) })
+      if s then
+        tag = '[' .. s .. '] '
+      end
     end
     local prefix = indent .. slot .. tag
     local suffix = node.kind == 'dir' and '/' or ''

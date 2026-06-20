@@ -36,27 +36,26 @@ local function convert_cmd(svg, png, size)
   return { bin, '-background', 'none', svg, '-resize', size .. 'x' .. size, png }
 end
 
----Return the on-disk PNG path for an icon stem, rasterizing+caching on first
----use. This is what the kitty placeholder backend transmits (t=f, by path).
----@param stem string
----@return string? path nil if the SVG is missing or conversion failed
-function M.png_path(stem)
-  if path_mem[stem] then
-    return path_mem[stem]
+---Return the on-disk PNG path for an icon id, rasterizing+caching on first use.
+---Resolves the id to its SVG via the active theme; caches by a hash of the SVG's
+---absolute path (collision-free across packs). nil if the SVG is missing/failed.
+---@param iconId string
+---@return string? path
+function M.png_path(iconId)
+  if path_mem[iconId] then
+    return path_mem[iconId]
   end
-  local opts = config.options
-  local size = opts.icon.size_px
-  local svg = opts.pack .. '/' .. stem .. '.svg'
-  if vim.fn.filereadable(svg) == 0 then
+  local resolved = config.options.resolved
+  local svg = require('svgtree.pack').icon_svg(resolved.theme, resolved.dir, iconId)
+  if not svg or vim.fn.filereadable(svg) == 0 then
     return nil
   end
 
   ensure_cache_dir()
-  local png = string.format('%s/%s_%d.png', cache_dir, stem, size)
+  local size = config.options.icon.size_px
+  local png = string.format('%s/%s_%d.png', cache_dir, vim.fn.sha256(svg), size)
 
-  -- Treat the cached PNG as stale if the source SVG is newer (e.g. the icon
-  -- pack was updated/swapped after the first rasterization). Keying by name
-  -- alone would otherwise serve the old rendering forever.
+  -- Stale if the source SVG is newer than the cached PNG (pack updated/swapped).
   local fresh = vim.fn.filereadable(png) == 1
   if fresh then
     local svg_st, png_st = vim.uv.fs_stat(svg), vim.uv.fs_stat(png)
@@ -72,17 +71,15 @@ function M.png_path(stem)
     end
   end
 
-  path_mem[stem] = png
+  path_mem[iconId] = png
   return png
 end
 
----Pre-rasterize every icon in the pack so later placement never blocks.
+---Pre-rasterize every icon in the active theme so later placement never blocks.
 function M.warm()
-  local opts = config.options
-  local files = vim.fn.globpath(opts.pack, '*.svg', false, true)
-  for _, svg in ipairs(files) do
-    local stem = vim.fn.fnamemodify(svg, ':t:r')
-    M.png_path(stem)
+  local resolved = config.options.resolved
+  for id in pairs(resolved.theme.iconDefinitions or {}) do
+    M.png_path(id)
   end
 end
 
