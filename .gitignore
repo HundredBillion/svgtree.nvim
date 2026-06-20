@@ -1,3 +1,6 @@
 # Rasterized icon cache is regenerated on demand
 *.png.cache
 .DS_Store
+
+# Internal planning docs (PRDs, design notes) — local only, not published.
+docs/

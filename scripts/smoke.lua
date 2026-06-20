@@ -29,10 +29,11 @@ print('resolver: OK (' .. #cases .. ' cases)')
 
 -- Rasterization (requires rsvg-convert or magick).
 if raster.has_converter() then
-  local bytes = raster.png_bytes('python')
-  assert(bytes and #bytes > 0, 'python.png rasterization failed')
+  local png = raster.png_path('python')
+  assert(png and vim.fn.filereadable(png) == 1, 'python.png rasterization failed')
+  local bytes = vim.fn.readblob(png)
   assert(bytes:sub(2, 4) == 'PNG', 'output is not PNG')
-  print('raster: OK (python -> ' .. #bytes .. ' bytes PNG)')
+  print('raster: OK (python -> ' .. png .. ')')
 else
   print('raster: SKIP (no ImageMagick)')
 end

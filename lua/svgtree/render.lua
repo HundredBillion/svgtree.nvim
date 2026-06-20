@@ -1,12 +1,15 @@
--- The view: owns the tree window/buffer, renders node lines, and keeps an
--- image icon welded to each visible line via the anchoring shim
--- (extmark-free variant: line<->buffer-row is stable between rebuilds, so we
--- reconcile by visible range and reposition with vim.ui.img on scroll).
+-- The view: owns the tree window/buffer, renders node lines, and welds an SVG
+-- image icon to each line via the shared placement engine (svgtree.engine, which
+-- uses kitty Unicode placeholders). Because each icon is ordinary buffer text it
+-- scrolls with its line and repaints on redraw for free; the view only rebuilds
+-- the text and calls the engine to re-place icons after a structural change.
 
 local config = require('svgtree.config')
 local engine = require('svgtree.engine')
+local capability = require('svgtree.capability')
 local icons = require('svgtree.icons')
 local Tree = require('svgtree.tree')
+local winlock = require('svgtree.winlock')
 
 local M = {}
 
@@ -175,7 +178,7 @@ function M.open(root)
     tree = Tree.new(root),
     nodes = {},
     grp = grp,
-    images = engine.supported(),
+    images = capability.supported(),
   }
 
   -- Weld an icon to each visible line via the shared placement engine. It
@@ -207,38 +210,15 @@ function M.open(root)
   map('R', rebuild)
   map('q', close)
 
-  -- A file tree never pans sideways: neutralize the horizontal-scroll inputs
-  -- (incl. Mac trackpad horizontal swipes -> ScrollWheelLeft/Right).
-  for _, lhs in ipairs({
-    'zh', 'zl', 'zH', 'zL',
-    '<ScrollWheelLeft>', '<ScrollWheelRight>',
-    '<S-ScrollWheelLeft>', '<S-ScrollWheelRight>',
-  }) do
-    map(lhs, '<Nop>')
-  end
+  -- A file tree never pans sideways. One shared seam locks horizontal scroll
+  -- (keymaps + a leftcol-snap on view.grp, torn down with the view on close).
+  winlock.lock_horizontal(win, buf, grp)
 
   -- On resize, the window width changed: re-truncate names. (The engine
   -- re-places images on its own resize handler.)
   vim.api.nvim_create_autocmd({ 'VimResized', 'WinResized' }, {
     group = grp,
     callback = relayout,
-  })
-  -- Safety net: if anything still pans the view sideways, snap it back.
-  vim.api.nvim_create_autocmd('WinScrolled', {
-    group = grp,
-    buffer = buf,
-    callback = function()
-      if not (view and vim.api.nvim_win_is_valid(view.win)) then
-        return
-      end
-      vim.api.nvim_win_call(view.win, function()
-        local v = vim.fn.winsaveview()
-        if v.leftcol and v.leftcol ~= 0 then
-          v.leftcol = 0
-          vim.fn.winrestview(v)
-        end
-      end)
-    end,
   })
   -- Tear down if the window goes away.
   vim.api.nvim_create_autocmd({ 'WinClosed' }, {

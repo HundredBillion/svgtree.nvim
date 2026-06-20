@@ -27,6 +27,7 @@
 
 local config = require('svgtree.config')
 local engine = require('svgtree.engine')
+local capability = require('svgtree.capability')
 local icons = require('svgtree.icons')
 
 local M = {}
@@ -85,12 +86,12 @@ function M.format(item, picker)
   --     before requiring snacks: the blank line needs nothing from it.)
   --   * determined unsupported (or not capable) -> snacks' default glyphs.
   --   * ready + supported -> build the image line below.
-  local determined_unsupported = engine.probed() and not engine.supported_cached()
-  if engine.capable() and not determined_unsupported and not ready[picker] then
+  local determined_unsupported = capability.probed() and not capability.supported_cached()
+  if capability.capable() and not determined_unsupported and not ready[picker] then
     return { { '' } }
   end
   local F = require('snacks.picker.format')
-  if not engine.supported_cached() then
+  if not capability.supported_cached() then
     return F.file(item, picker)
   end
   local ret = {} ---@type snacks.picker.Highlight[]
@@ -120,10 +121,12 @@ function M.format(item, picker)
   end
 
   -- The image anchors at this column. A *real* space slot gives it a byte
-  -- column screenpos() can resolve (virtual text has none).
+  -- column screenpos() can resolve (virtual text has none). The trailing space
+  -- sits past the icon's `w` cells, so it reads as a gap between icon and
+  -- filename (mirrors render.lua's own-tree slot) for VSCode-style breathing room.
   local w = ((picker.opts.formatters or {}).file or {}).icon_width or 2
   item._svg_icon_col = col
-  add({ { string.rep(' ', w) } })
+  add({ { string.rep(' ', w) .. ' ' } })
 
   -- Filename with snacks' own glyph suppressed (we draw the image over it).
   local files = picker.opts.icons.files
@@ -158,13 +161,13 @@ function M.format(item, picker)
 end
 
 -- Attach the placement engine for this explorer. Called from on_show via
--- engine.on_resolved — i.e. only once support has been determined, so no
+-- capability.on_resolved — i.e. only once support has been determined, so no
 -- blocking probe happens here. For the auto-open case format() held the lines
 -- blank until now; this renders the real content and places icons in the SAME
 -- synchronous pass, so they appear together (no pop).
 ---@param picker snacks.Picker
 local function attach(picker)
-  local ok = engine.supported_cached()
+  local ok = capability.supported_cached()
   local list = picker.list
   local list_ok = list and list.win and list.win.win and list.win.buf
   if not list_ok then
@@ -230,28 +233,7 @@ local function attach(picker)
   -- slide icons off their anchor column). Lock it on the list buffer — neutralize
   -- the horizontal-scroll inputs and snap leftcol back to 0. Once per list.
   if not list._svg_hlock then
-    for _, lhs in ipairs({
-      'zh', 'zl', 'zH', 'zL',
-      '<ScrollWheelLeft>', '<ScrollWheelRight>',
-      '<S-ScrollWheelLeft>', '<S-ScrollWheelRight>',
-    }) do
-      pcall(vim.keymap.set, 'n', lhs, '<Nop>', { buffer = buf, nowait = true, silent = true })
-    end
-    vim.api.nvim_create_autocmd('WinScrolled', {
-      buffer = buf,
-      callback = function()
-        if not vim.api.nvim_win_is_valid(win) then
-          return
-        end
-        vim.api.nvim_win_call(win, function()
-          local v = vim.fn.winsaveview()
-          if v.leftcol and v.leftcol ~= 0 then
-            v.leftcol = 0
-            vim.fn.winrestview(v)
-          end
-        end)
-      end,
-    })
+    require('svgtree.winlock').lock_horizontal(win, buf)
     list._svg_hlock = true
   end
 
@@ -291,9 +273,9 @@ end
 ---flips `ready`, so the first visible content is text + icons together.
 ---@param picker snacks.Picker
 function M.on_show(picker)
-  engine.detect()
+  capability.detect()
   when_entered(function()
-    engine.on_resolved(function()
+    capability.on_resolved(function()
       if picker and picker.list then
         attach(picker)
       end

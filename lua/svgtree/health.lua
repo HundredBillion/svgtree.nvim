@@ -1,5 +1,6 @@
 -- :checkhealth svgtree
 local raster = require('svgtree.raster')
+local capability = require('svgtree.capability')
 
 local M = {}
 
@@ -14,11 +15,9 @@ function M.check()
     h.error('vim.ui.img not found — requires Neovim 0.13+ (nightly currently)')
   end
 
-  -- Terminal graphics support.
-  local ok, supported = pcall(function()
-    return vim.ui.img and vim.ui.img._supported({ timeout = 1000 })
-  end)
-  if ok and supported then
+  -- Terminal graphics support (terminal axis only; converter checked separately
+  -- below, so the user sees which piece is missing).
+  if capability.terminal_supported({ timeout = 1000 }) then
     h.ok('terminal supports the graphics protocol')
   else
     h.warn('terminal did not report graphics support — icons will fall back to text')

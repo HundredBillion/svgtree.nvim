@@ -22,6 +22,7 @@
 
 local config = require('svgtree.config')
 local engine = require('svgtree.engine')
+local capability = require('svgtree.capability')
 local icons = require('svgtree.icons')
 
 local M = {}
@@ -58,7 +59,7 @@ end
 ---`after_render` handler: (re)attach the engine for this tree and reconcile.
 ---@param args table neo-tree event payload (carries the source state)
 function M.on_render(args)
-  if not engine.supported_cached() then
+  if not capability.supported_cached() then
     return
   end
   if not config.options.pack then

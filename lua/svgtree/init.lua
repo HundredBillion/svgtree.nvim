@@ -14,13 +14,13 @@ local M = {}
 function M.setup(opts)
   config.setup(opts)
   -- Kick off graphics detection as early as the UI allows. Unlike the blocking
-  -- supported() probe, engine.detect() sends the terminal query and resolves on
+  -- supported() probe, capability.detect() sends the terminal query and resolves on
   -- the reply WITHOUT vim.wait — no event-loop pumping — so it's safe during
   -- startup and the answer is ready around the first paint. Hosts that hold
   -- their first render until detection resolves (see the snacks adapter) then
   -- show text and icons together, with no glyph flash and no icon pop-in.
   local function start_detection()
-    require('svgtree.engine').detect()
+    require('svgtree.capability').detect()
   end
   if vim.v.vim_did_enter == 1 then
     start_detection()
