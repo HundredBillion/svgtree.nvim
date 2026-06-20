@@ -27,6 +27,7 @@
 
 local config = require('svgtree.config')
 local engine = require('svgtree.engine')
+local capability = require('svgtree.capability')
 local icons = require('svgtree.icons')
 
 local M = {}
@@ -85,12 +86,12 @@ function M.format(item, picker)
   --     before requiring snacks: the blank line needs nothing from it.)
   --   * determined unsupported (or not capable) -> snacks' default glyphs.
   --   * ready + supported -> build the image line below.
-  local determined_unsupported = engine.probed() and not engine.supported_cached()
-  if engine.capable() and not determined_unsupported and not ready[picker] then
+  local determined_unsupported = capability.probed() and not capability.supported_cached()
+  if capability.capable() and not determined_unsupported and not ready[picker] then
     return { { '' } }
   end
   local F = require('snacks.picker.format')
-  if not engine.supported_cached() then
+  if not capability.supported_cached() then
     return F.file(item, picker)
   end
   local ret = {} ---@type snacks.picker.Highlight[]
@@ -158,13 +159,13 @@ function M.format(item, picker)
 end
 
 -- Attach the placement engine for this explorer. Called from on_show via
--- engine.on_resolved — i.e. only once support has been determined, so no
+-- capability.on_resolved — i.e. only once support has been determined, so no
 -- blocking probe happens here. For the auto-open case format() held the lines
 -- blank until now; this renders the real content and places icons in the SAME
 -- synchronous pass, so they appear together (no pop).
 ---@param picker snacks.Picker
 local function attach(picker)
-  local ok = engine.supported_cached()
+  local ok = capability.supported_cached()
   local list = picker.list
   local list_ok = list and list.win and list.win.win and list.win.buf
   if not list_ok then
@@ -291,9 +292,9 @@ end
 ---flips `ready`, so the first visible content is text + icons together.
 ---@param picker snacks.Picker
 function M.on_show(picker)
-  engine.detect()
+  capability.detect()
   when_entered(function()
-    engine.on_resolved(function()
+    capability.on_resolved(function()
       if picker and picker.list then
         attach(picker)
       end

@@ -5,6 +5,7 @@
 
 local config = require('svgtree.config')
 local engine = require('svgtree.engine')
+local capability = require('svgtree.capability')
 local icons = require('svgtree.icons')
 local Tree = require('svgtree.tree')
 
@@ -175,7 +176,7 @@ function M.open(root)
     tree = Tree.new(root),
     nodes = {},
     grp = grp,
-    images = engine.supported(),
+    images = capability.supported(),
   }
 
   -- Weld an icon to each visible line via the shared placement engine. It
