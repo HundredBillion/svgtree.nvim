@@ -261,17 +261,36 @@ local function attach(picker)
   end)
 end
 
----Hook for the explorer's `on_show`. Kicks off async graphics detection (a
----no-op if already running or resolved) and attaches once support is known.
----While detection is pending, format() holds the lines blank, so the explorer's
----first visible content is text + icons together rather than text then a pop-in.
+-- Run fn once the editor is past startup. The explorer's first show can happen
+-- mid-startup, and placing a burst of images THEN is unreliable: while Neovim is
+-- still painting the UI, the terminal drops most of the placements (only a few
+-- stick) — which is exactly why icons appeared only after a manual reopen. A
+-- reopen runs post-startup against an idle terminal, so the same burst sticks.
+-- Deferring attach to here makes the first open behave like that reliable
+-- reopen. On reopen vim_did_enter is already set, so this is just the next tick.
+local function when_entered(fn)
+  if vim.v.vim_did_enter == 1 then
+    vim.schedule(fn)
+  else
+    vim.api.nvim_create_autocmd('VimEnter', { once = true, callback = function()
+      vim.schedule(fn)
+    end })
+  end
+end
+
+---Hook for the explorer's `on_show`. Kicks off graphics detection (instant for
+---known terminals; a no-op if already running), then attaches once BOTH startup
+---is done and support is determined. format() holds the lines blank until attach
+---flips `ready`, so the first visible content is text + icons together.
 ---@param picker snacks.Picker
 function M.on_show(picker)
   engine.detect()
-  engine.on_resolved(function()
-    if picker and picker.list then
-      attach(picker)
-    end
+  when_entered(function()
+    engine.on_resolved(function()
+      if picker and picker.list then
+        attach(picker)
+      end
+    end)
   end)
 end
 
