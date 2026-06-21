@@ -124,9 +124,9 @@ require("svgtree").setup({
 })
 ```
 
-## Use the icon engine in snacks.nvim / neo-tree
+## Use the icon engine in snacks.nvim / neo-tree / bufferline
 
-svgtree's icon machinery is a **host-agnostic engine** you can attach to an existing explorer to get real SVG icons there — no need to switch to svgtree's own tree. Call `require("svgtree").setup({})` once, then wire an adapter.
+svgtree's icon machinery is a **host-agnostic engine** you can attach to an existing explorer — or the bufferline tabline — to get real SVG icons there, no need to switch to svgtree's own tree. Call `require("svgtree").setup({})` once, then wire an adapter.
 
 ### snacks.nvim explorer
 
@@ -163,7 +163,28 @@ require("neo-tree").setup({
 -- require("svgtree.adapters.neotree").setup({ col_offset = 1 })
 ```
 
-Both require the same prerequisites as the main tree. When they're unavailable, the adapters no-op and the host renders as usual.
+### bufferline.nvim (tabs)
+
+Show each buffer's icon on its tab, matching the explorer. The tabline isn't a buffer, so this adapter doesn't use the overlay engine — it returns the icon as Kitty placeholder text + a highlight whose foreground colour carries the image id, via bufferline's `get_element_icon` hook.
+
+```lua
+-- lua/plugins/bufferline.lua
+require("svgtree.adapters.bufferline").setup() -- once; pre-warms tab icons
+opts = {
+  options = {
+    -- Required: the image id rides in the icon highlight's fg, so color_icons
+    -- must stay on (color_icons = false forces fg = NONE and breaks the icon).
+    color_icons = true,
+    get_element_icon = function(element)
+      -- Returns nil on stable nvim / non-graphics terminals, so bufferline
+      -- falls back to its usual glyph (e.g. mini.icons / nvim-web-devicons).
+      return require("svgtree.adapters.bufferline").get_element_icon(element)
+    end,
+  },
+}
+```
+
+All three require the same prerequisites as the main tree. When they're unavailable, the adapters no-op and the host renders as usual.
 
 ## How it works
 
