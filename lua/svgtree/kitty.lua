@@ -141,6 +141,58 @@ function M.virt_text(image_id, placement_id, cols, row)
   return { { table.concat(cells), hl } }
 end
 
+-- ── fg-only mode ───────────────────────────────────────────────────────────
+-- For hosts that can't carry the placement id. The standard scheme above puts
+-- the placement id in a cell's `sp` (underline) colour, but some hosts rebuild
+-- the cell's highlight and copy only `fg` -- e.g. bufferline.nvim's
+-- highlights.set_icon_highlight derives a per-tab icon group from the tab
+-- background and reapplies `fg` only, dropping `sp`. These variants bind cells
+-- to the image's DEFAULT placement (no placement id), so the image id alone --
+-- carried in `fg` -- is enough.
+
+---Create the image's *default* virtual placement (no placement id). Cells that
+---carry only the image id bind to it. Call once per image, like M.place.
+---@param image_id integer
+---@param cols integer placement grid width in cells
+---@param rows integer placement grid height in cells
+function M.place_default(image_id, cols, rows)
+  -- a=p, U=1 (unicode placeholder), C=1 (don't move cursor), no p= -> default
+  -- placement. c/r: the cell grid the image is scaled into.
+  write(seq({ a = 'p', U = 1, i = image_id, C = 1, c = cols, r = rows, q = 2 }))
+end
+
+---Highlight group carrying ONLY the image id (in fg); no placement id in sp.
+---Pair with M.place_default. Created once per image.
+---@param image_id integer
+---@return string hl_group
+function M.hl_group_fg(image_id)
+  local key = 'fg:' .. image_id
+  local name = hl_cache[key]
+  if name then
+    return name
+  end
+  name = 'SvgtreeImgFg' .. image_id
+  vim.api.nvim_set_hl(0, name, { fg = image_id, nocombine = true })
+  hl_cache[key] = name
+  return name
+end
+
+---Placeholder cells for a single-row icon as a PLAIN STRING (not an extmark
+---virt_text chunk), for hosts that inject the icon as ordinary text -- e.g. a
+---tabline. Carries no sp; pair with place_default + hl_group_fg (apply that hl
+---to this string). Each cell is PLACEHOLDER + row-diacritic + col-diacritic.
+---@param cols integer number of cells wide
+---@param row? integer image row index (1-based; default 1)
+---@return string
+function M.placeholder_text(cols, row)
+  row = row or 1
+  local cells = {}
+  for c = 1, cols do
+    cells[#cells + 1] = PLACEHOLDER .. (diac[row] or '') .. (diac[c] or '')
+  end
+  return table.concat(cells)
+end
+
 ---Delete an image from the terminal by id (frees its data + placements).
 ---@param image_id integer
 function M.delete(image_id)
