@@ -10,6 +10,7 @@ local capability = require('svgtree.capability')
 local icons = require('svgtree.icons')
 local Tree = require('svgtree.tree')
 local winlock = require('svgtree.winlock')
+local text = require('svgtree.text')
 
 local M = {}
 
@@ -19,28 +20,6 @@ local view = nil
 -- byte column (1-indexed) where the icon sits for a given depth
 local function icon_col(depth)
   return depth * config.options.indent + 1
-end
-
--- Trim a string to a display-cell budget, appending '…' if it overflows
--- (VSCode-style). Width-aware, so multibyte names behave.
-local function truncate(s, budget)
-  if budget <= 0 then
-    return ''
-  end
-  if vim.fn.strdisplaywidth(s) <= budget then
-    return s
-  end
-  if budget == 1 then
-    return '…'
-  end
-  local target = budget - 1 -- room for the ellipsis (1 cell)
-  local n = vim.fn.strchars(s)
-  local out = s
-  while n > 0 and vim.fn.strdisplaywidth(out) > target do
-    n = n - 1
-    out = vim.fn.strcharpart(s, 0, n)
-  end
-  return out .. '…'
 end
 
 -- Build buffer text from the flattened node list, truncating names that would
@@ -70,7 +49,7 @@ local function render_lines()
     local suffix = node.kind == 'dir' and '/' or ''
     -- Budget the name to what's left of the window (1-cell right margin).
     local budget = width - vim.fn.strdisplaywidth(prefix) - 1
-    lines[#lines + 1] = prefix .. truncate(node.name .. suffix, budget)
+    lines[#lines + 1] = prefix .. text.truncate(node.name .. suffix, budget)
   end
   vim.bo[view.buf].modifiable = true
   vim.api.nvim_buf_set_lines(view.buf, 0, -1, false, lines)
