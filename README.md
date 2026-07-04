@@ -36,13 +36,12 @@ return {
   "HundredBillion/svgtree.nvim",
   opts = {},
   cmd = { "SvgTree", "SvgTreeToggle" },
-  keys = {
-    { "<leader>t", "<cmd>SvgTreeToggle<cr>", desc = "Toggle svgtree" },
-  },
 }
 ```
 
 (lazy.nvim auto-loads every `.lua` file under `~/.config/nvim/lua/plugins/`, so the filename is up to you — `svgtree.lua` just keeps things tidy.)
+
+No default keymap is set — bind `:SvgTreeToggle` to whatever key you like, e.g. add `keys = { { "<leader>t", "<cmd>SvgTreeToggle<cr>", desc = "Toggle svgtree" } }` to the spec above.
 
 Out of the box you get a small bundled icon set. For the full Material or vscode-icons themes, see [Icon packs](#icon-packs) below.
 
