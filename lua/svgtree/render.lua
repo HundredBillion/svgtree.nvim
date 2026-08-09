@@ -234,6 +234,10 @@ end
 
 M.close = close
 
+function M.root()
+  return view and view.tree.root or nil
+end
+
 function M.toggle(root)
   if view then
     close()

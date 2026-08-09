@@ -47,6 +47,10 @@ function M.close()
   render.close()
 end
 
+function M.root()
+  return render.root()
+end
+
 function M.toggle(root)
   render.toggle(root)
 end
