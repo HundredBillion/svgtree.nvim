@@ -11,7 +11,9 @@ local function check(c, m)
 end
 
 -- ---- fixture: dirs + files + hidden entries, mixed case ----
-local root = Tree.normalize(vim.fn.tempname())
+local root = vim.fn.tempname()
+vim.fn.mkdir(root, 'p')
+root = assert(vim.uv.fs_realpath(root))
 vim.fn.mkdir(root .. '/alpha', 'p')
 vim.fn.mkdir(root .. '/Beta', 'p') -- capital B: exercises case-insensitive sort
 vim.fn.mkdir(root .. '/.hidden_dir', 'p')
