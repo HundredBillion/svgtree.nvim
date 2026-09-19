@@ -2,6 +2,8 @@ local M = {}
 
 ---@class svgtree.Config
 local defaults = {
+  renderer = 'auto',
+  native = { width = 280, compact_folders = true, mappings = {} },
   -- Pack selector: nil = bundled starter; a bare name resolves under
   -- stdpath('data')/svgtree/packs/<name>; an absolute path = an unpacked VSCode
   -- icon-theme dir (or a path straight to a theme JSON).
@@ -31,6 +33,10 @@ M.options = vim.deepcopy(defaults)
 ---@param opts? svgtree.Config
 function M.setup(opts)
   M.options = vim.tbl_deep_extend('force', vim.deepcopy(defaults), opts or {})
+  assert(vim.tbl_contains({ 'auto', 'terminal', 'sprite' }, M.options.renderer), 'invalid svgtree renderer')
+  if package.loaded['svgtree.native_view'] then
+    package.loaded['svgtree.native_view'].clear_cache()
+  end
 
   local pack = require('svgtree.pack')
   local resolved = pack.load(nil) -- bundled starter, always present

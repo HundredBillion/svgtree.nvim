@@ -39,6 +39,7 @@ function M.open(root,saved,callbacks)
   end
   local function failure(err)
     if finished or not self.wanted then return end
+    State.save(root,self.snapshot_value)
     finished=true; self.phase='closed'; self.generation=self.generation+1
     if self.controller then self.controller:close(); self.controller=nil end
     if self.handle then local h=self.handle; self.handle=nil; h:close() end

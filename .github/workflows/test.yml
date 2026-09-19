@@ -6,22 +6,40 @@ on:
   pull_request:
 
 jobs:
-  test:
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        nvim: ['v0.11.0', stable, nightly]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: HundredBillion/sprite.nvim
+          ref: e4b272dcff25f062f4c6d699cbc44e71807344bc
+          path: .test-deps/sprite.nvim
+      - uses: rhysd/action-setup-vim@v1
+        id: nvim
+        with:
+          neovim: true
+          version: ${{ matrix.nvim }}
+      - run: SVGTREE_API_CHECKOUT=.test-deps/sprite.nvim SVGTREE_NVIM='${{ steps.nvim.outputs.executable }}' bash scripts/test-core.sh
+
+  graphics:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # rsvg-convert lets the raster test exercise real SVG -> PNG conversion
-      # instead of skipping its body.
-      - name: Install SVG converter (rsvg-convert)
-        run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
-
-      - name: Set up Neovim nightly
-        uses: rhysd/action-setup-vim@v1
+      - uses: actions/checkout@v4
+        with:
+          repository: HundredBillion/sprite.nvim
+          ref: e4b272dcff25f062f4c6d699cbc44e71807344bc
+          path: .test-deps/sprite.nvim
+      - run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
+      - uses: rhysd/action-setup-vim@v1
         id: nvim
         with:
           neovim: true
           version: nightly
-
-      - name: Run headless test suite
-        run: SVGTREE_NVIM='${{ steps.nvim.outputs.executable }}' bash scripts/test.sh
+      - run: SVGTREE_API_CHECKOUT=.test-deps/sprite.nvim SVGTREE_NVIM='${{ steps.nvim.outputs.executable }}' bash scripts/test.sh

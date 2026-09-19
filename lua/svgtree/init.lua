@@ -1,58 +1,119 @@
--- svgtree.nvim — a minimal Neovim file tree that renders real SVG icons as
--- images (via the native vim.ui.img API), instead of font glyphs.
---
--- Requires: Neovim >= 0.13 (vim.ui.img), a terminal with the Kitty graphics
--- protocol (Kitty, Ghostty, WezTerm), and ImageMagick for SVG rasterization.
-
 local config = require('svgtree.config')
-local raster = require('svgtree.raster')
-local render = require('svgtree.render')
+local State = require('svgtree.state')
+local Tree = require('svgtree.tree')
 
 local M = {}
+local active, generation = nil, 0
 
----@param opts? svgtree.Config
-function M.setup(opts)
-  config.setup(opts)
-  -- Kick off graphics detection as early as the UI allows. Unlike the blocking
-  -- supported() probe, capability.detect() sends the terminal query and resolves on
-  -- the reply WITHOUT vim.wait — no event-loop pumping — so it's safe during
-  -- startup and the answer is ready around the first paint. Hosts that hold
-  -- their first render until detection resolves (see the snacks adapter) then
-  -- show text and icons together, with no glyph flash and no icon pop-in.
-  local function start_detection()
-    require('svgtree.capability').detect()
-  end
-  if vim.v.vim_did_enter == 1 then
-    start_detection()
-  else
-    vim.api.nvim_create_autocmd('UIEnter', { once = true, callback = start_detection })
-  end
-  -- Optionally pre-rasterize the whole pack. Off by default: icons rasterize
-  -- on first use and cache to disk, so warming a large pack (e.g. Material's
-  -- 1200+ icons) would burn startup CPU for icons you may never see.
-  if config.options.warm and raster.has_converter() then
-    vim.schedule(raster.warm)
+local function terminal()
+  return require('svgtree.render')
+end
+
+local function graphics()
+  local function detect() require('svgtree.capability').detect() end
+  if vim.v.vim_did_enter == 1 then detect()
+  else vim.api.nvim_create_autocmd('UIEnter', { once = true, callback = detect }) end
+  if config.options.warm then
+    local raster = require('svgtree.raster')
+    if raster.has_converter() then vim.schedule(raster.warm) end
   end
 end
 
----Open the tree. @param root? string defaults to cwd
-function M.open(root)
-  if not config.options.resolved then
-    config.setup({})
-  end
-  render.open(root)
+function M.setup(opts)
+  config.setup(opts)
+  if config.options.renderer == 'terminal' then graphics() end
+end
+
+local function save()
+  if not active then return end
+  local snapshot = active.view and active.view:snapshot() or
+    (active.kind == 'terminal' and terminal().snapshot() or nil)
+  if snapshot then State.save(active.root, snapshot) end
 end
 
 function M.close()
-  render.close()
+  generation = generation + 1
+  if not active then return end
+  save()
+  local old = active
+  active = nil
+  if old.kind == 'native' then old.cancel()
+  elseif old.kind == 'pending' and old.cancel then old.cancel()
+  elseif old.kind == 'terminal' then terminal().close() end
+end
+
+local function fallback(root, token, err)
+  if token ~= generation then return end
+  if active and active.kind == 'terminal' then return end
+  if err and config.options.renderer == 'sprite' then
+    local reason = type(err) == 'table' and (err.message or err.code) or tostring(err or 'unavailable')
+    vim.notify('SVGTree Sprite renderer unavailable: ' .. reason, vim.log.levels.WARN)
+  end
+  if config.options.renderer ~= 'terminal' then graphics() end
+  local saved, existing = State.get(root)
+  if not existing then saved = nil end
+  active = {kind = 'terminal', root = root}
+  terminal().open(root, saved)
+end
+
+function M.open(root)
+  if not config.options.resolved then M.setup({}) end
+  M.close()
+  root = Tree.normalize(root or vim.uv.cwd())
+  local token = generation
+  if config.options.renderer == 'terminal' then fallback(root, token); return end
+  local ok, sprite = pcall(require, 'sprite')
+  if not ok or type(sprite) ~= 'table' or type(sprite.available) ~= 'function' then
+    fallback(root, token, {message = 'Sprite plugin API is unavailable'})
+    return
+  end
+  active = {kind = 'pending', root = root}
+  local available_ok, available_cancel = pcall(sprite.available, function(err, capabilities)
+    if token ~= generation then return end
+    if err or not capabilities then
+      fallback(root, token, err or {message = 'Sprite pane is ineligible'})
+      return
+    end
+    local features = capabilities.features or {}
+    for _, feature in ipairs({'owned-dock-v1', 'virtual-list-v1', 'svg-assets-v1', 'dock-resize-v1'}) do
+      if not features[feature] and not vim.tbl_contains(features, feature) then
+        fallback(root, token, {message = 'Sprite server lacks ' .. feature})
+        return
+      end
+    end
+    local saved, existing = State.get(root)
+    if not existing then saved = nil end
+    local opened, cancel = pcall(function() return require('svgtree.native').open(root, saved, {
+      ready = function(view)
+        if token ~= generation then view:close(); return end
+        active = {kind = 'native', root = root, view = view, cancel = function() view:close() end}
+      end,
+      failed = function(failure)
+        if token == generation then
+          if active and active.view then State.save(root, active.view:snapshot()) end
+          fallback(root, token, failure)
+        end
+      end,
+      closed = function()
+        if token == generation then active = nil; generation = generation + 1 end
+      end,
+    }) end)
+    if not opened then fallback(root, token, {message = tostring(cancel)})
+    elseif token == generation and active and active.kind == 'pending' then active.cancel = cancel end
+    if token ~= generation and opened then cancel() end
+  end)
+  if not available_ok then fallback(root, token, {message = tostring(available_cancel)})
+  elseif token == generation and active and active.kind == 'pending' and not active.cancel then active.cancel = available_cancel end
 end
 
 function M.root()
-  return render.root()
+  if not active then return nil end
+  if active.kind == 'terminal' and not terminal().root() then active = nil; return nil end
+  return active.root
 end
 
 function M.toggle(root)
-  render.toggle(root)
+  if M.root() then M.close() else M.open(root) end
 end
 
 return M
