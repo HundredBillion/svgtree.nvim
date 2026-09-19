@@ -10,7 +10,7 @@ end
 
 function M.get(root)
   root = Tree.normalize(root)
-  return vim.deepcopy(saved[root] or initial(root))
+  return vim.deepcopy(saved[root] or initial(root)), saved[root] ~= nil
 end
 
 function M.save(root, snapshot)

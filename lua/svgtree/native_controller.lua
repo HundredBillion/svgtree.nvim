@@ -26,6 +26,7 @@ function M.new(opts)
   local self = setmetatable({root=root, tree=opts.tree or Tree.new(root, {async=true}),
     snapshot=opts.snapshot or State.get(root), rows={}, on_change=opts.on_change or function() end,
     on_open=opts.on_open or function() end, on_editor_focus=opts.on_editor_focus or function() end,
+    on_close=opts.on_close or function() end,
     keys=Keys.new(opts.keys, opts.key_timeout_ms, opts.side), is_active=opts.is_active or function() return true end, search={active=false,query='',last='',matches={}},
     on_search=opts.on_search, compact=opts.compact ~= false,
     generation=0, closed=false}, Controller)
@@ -207,7 +208,7 @@ function Controller:action(action)
     self.search.initial_scroll=vim.deepcopy(self.snapshot.scroll)
     self.keys:reset(); self:publish()
   elseif action=='refresh' then self:refresh()
-  elseif action=='close' then self:close()
+  elseif action=='close' then self:close(); self.on_close()
   elseif action=='focus_editor' then self.on_editor_focus()
   elseif row and (action=='open' or action=='enter') then
     if row.kind=='file' then
