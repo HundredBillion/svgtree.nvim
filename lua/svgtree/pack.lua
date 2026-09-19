@@ -12,6 +12,10 @@ local function bundled_dir()
   return vim.fn.fnamemodify(src, ':h:h:h') .. '/assets/icons'
 end
 
+local function material_dir()
+  return vim.fn.fnamemodify(bundled_dir(), ':h') .. '/material'
+end
+
 local function read_json(path)
   return vim.json.decode(table.concat(vim.fn.readfile(path), '\n'))
 end
@@ -72,18 +76,27 @@ function M.load(selector)
   return { theme = theme, dir = vim.fn.fnamemodify(theme_json, ':h') }
 end
 
+function M.load_bundled_material()
+  return M.load(material_dir())
+end
+
 ---Resolve a filesystem entry to an iconId, or nil for "no icon". Pure.
 ---@param theme table
 ---@param name string basename
 ---@param kind 'dir'|'file'
 ---@param open? boolean
+---@param opts? { root?: boolean }
 ---@return string? iconId
-function M.resolve(theme, name, kind, open)
+function M.resolve(theme, name, kind, open, opts)
   if type(theme) ~= 'table' then
     return nil
   end
 
   if kind == 'dir' then
+    if opts and opts.root then
+      local root = open and (theme.rootFolderExpanded or theme.rootFolder) or theme.rootFolder
+      if root then return root end
+    end
     local key = name:lower()
     local id
     if open and type(theme.folderNamesExpanded) == 'table' then
@@ -103,9 +116,11 @@ function M.resolve(theme, name, kind, open)
     id = theme.fileNames[name] or theme.fileNames[name:lower()]
   end
   if not id then
-    local ext = name:match('%.([%w_]+)$')
-    if ext and type(theme.fileExtensions) == 'table' then
-      id = theme.fileExtensions[ext:lower()]
+    if type(theme.fileExtensions) == 'table' then
+      for dot in name:gmatch('()%.') do
+        id = theme.fileExtensions[name:sub(dot + 1):lower()]
+        if id then break end
+      end
     end
   end
   return id or theme.file

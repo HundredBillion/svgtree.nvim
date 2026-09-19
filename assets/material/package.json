@@ -1,0 +1,11 @@
+{
+  "version": "5.38.1",
+  "contributes": {
+    "iconThemes": [
+      {
+        "id": "material-icon-theme",
+        "path": "dist/material-icons.json"
+      }
+    ]
+  }
+}

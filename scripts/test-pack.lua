@@ -26,6 +26,19 @@ check(pack.resolve(theme, 'src', 'dir', false) == '_src', 'folderNames -> _src')
 check(pack.resolve(theme, 'lib', 'dir', false) == '_f', 'unmatched folder -> folder')
 check(pack.resolve(theme, 'lib', 'dir', true) == '_fo', 'open unmatched folder -> folderExpanded')
 check(pack.resolve({ iconDefinitions = {}, folder = '_f' }, 'lib', 'dir', true) == '_f', 'no folderExpanded -> folder')
+local compound = {
+  iconDefinitions = {}, file = 'generic',
+  fileNames = { ['special.d.ts'] = 'named' },
+  fileExtensions = { ['d.ts'] = 'declaration', ts = 'typescript' },
+  folder = 'folder', folderExpanded = 'open-folder',
+  rootFolder = 'root', rootFolderExpanded = 'open-root',
+}
+check(pack.resolve(compound, 'file.d.ts', 'file', false) == 'declaration', 'compound extension')
+check(pack.resolve(compound, 'special.d.ts', 'file', false) == 'named', 'exact filename precedes extension')
+check(pack.resolve(compound, 'other.ts', 'file', false) == 'typescript', 'simple extension')
+check(pack.resolve(compound, 'root', 'dir', false, { root = true }) == 'root', 'root folder')
+check(pack.resolve(compound, 'root', 'dir', true, { root = true }) == 'open-root', 'open root folder')
+check(pack.resolve({ folder = 'folder' }, 'root', 'dir', true, { root = true }) == 'folder', 'root fallback')
 
 -- ---- pure icon_svg ----
 check(pack.icon_svg(theme, '/p', '_py') == '/p/py.svg', 'icon_svg resolves iconPath')
@@ -54,6 +67,19 @@ local b = pack.load(nil)
 check(b ~= nil and type(b.theme.iconDefinitions) == 'table', 'bundled loads')
 check(b ~= nil and pack.resolve(b.theme, 'main.py', 'file') == 'python', 'bundled resolves py -> python')
 check(b ~= nil and pack.resolve(b.theme, 'src', 'dir', false) == 'directory', 'bundled folder default -> directory')
+local material = pack.load_bundled_material()
+check(material ~= nil and material.theme.iconDefinitions ~= nil, 'bundled material loads')
+local icons = require('svgtree.icons')
+local native = icons.resolve_pack('native')
+check(native ~= nil and native.dir == material.dir, 'native default uses Material')
+check(icons.resolve_pack('terminal').dir == b.dir, 'terminal default uses starter')
+local config = require('svgtree.config')
+config.setup({ pack = d })
+check(icons.resolve_pack('native').dir == d, 'native explicit path wins')
+check(icons.resolve_pack('terminal').dir == d, 'terminal explicit path wins')
+check(icons.stem('entry', 'file') == '_a', 'host adapter uses configured pack')
+config.setup({ pack = 'material' })
+check(icons.resolve_pack('native').dir == material.dir or icons.resolve_pack('native').dir == pack.load('material').dir, 'material selector resolves')
 
 -- ---- load failures -> nil ----
 local cd = vim.fn.tempname(); vim.fn.mkdir(cd, 'p')
