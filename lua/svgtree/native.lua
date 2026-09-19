@@ -93,12 +93,12 @@ function M.open(root,saved,callbacks)
     local patch={selected=selected or vim.NIL,status=status(s)}
     if reveal and selected then patch.reveal=reveal
     elseif initial and selected and s.scroll and s.scroll.id and not s.root_collapsed then patch.scroll={id=s.scroll.id,offset=s.scroll.offset or 0} end
-    self.pending_state=false; self.reveal=nil; self.busy=true
+    self.pending_state=false; self.reveal=nil; self.busy=true; self.busy_kind='state'
     local g=self.generation
     self.handle:state(self.ack_revision,patch,function(err)
       if not current(g) then return end
       if err then failure(err); return end
-      self.busy=false
+      self.busy=false; self.busy_kind=nil
       if initial and self.phase=='opening' then
         if self.desired_rows~=self.sent_rows or self.pending_state then send();return end
         self.handle:focus(function(e)
@@ -120,7 +120,7 @@ function M.open(root,saved,callbacks)
   send=function()
     if not self.handle or self.phase=='closed' or self.phase=='suspended' or self.busy then return end
     if self.desired_rows and (self.ack_revision==0 or not vim.deep_equal(self.desired_rows,self.sent_rows)) then
-      self.busy=true
+      self.busy=true; self.busy_kind='structure'
       local rows=self.desired_rows
       local ids=self.desired_ids
       local missing={}
@@ -155,7 +155,7 @@ function M.open(root,saved,callbacks)
         self.handle:rows(rev,rows,selected,function(err)
           if not current(g) then return end
           if err then failure(err); return end
-          self.ack_revision=rev; self.busy=false
+          self.ack_revision=rev; self.busy=false; self.busy_kind=nil
           if self.desired_rows~=rows then send() else send_state(self.reveal,self.phase=='opening') end
         end)
       end
@@ -183,21 +183,21 @@ function M.open(root,saved,callbacks)
       self.snapshot_value.widths.native=ev.width
       self.controller.snapshot.widths.native=ev.width;save()
     elseif ev.type=='list_scroll' then
-      if ev.revision~=self.ack_revision then return end
+      if ev.revision~=self.ack_revision or self.busy_kind=='structure' or self.desired_rows~=self.sent_rows then return end
       self.snapshot_value.scroll={id=ev.top,offset=ev.offset,visible_rows=ev.visible_rows}
       self.controller.snapshot.scroll=vim.deepcopy(self.snapshot_value.scroll);save()
     elseif ev.type=='list_click' or ev.type=='list_action' then
-      if ev.revision~=self.ack_revision or self.busy then return end
+      if ev.revision~=self.ack_revision or self.busy_kind=='structure' or self.desired_rows~=self.sent_rows then return end
       if ev.type=='list_action' then
         if ev.action=='root-toggle' then
           self.snapshot_value.root_collapsed=not self.snapshot_value.root_collapsed
           self.controller.snapshot.root_collapsed=self.snapshot_value.root_collapsed
-          self.busy=true
+          self.busy=true; self.busy_kind='structure'
           local g=self.generation
           self.handle:update(View.description(nil,root,self.snapshot_value.root_collapsed),function(err)
             if not current(g) then return end
             if err then failure(err);return end
-            self.busy=false;send()
+            self.busy=false;self.busy_kind=nil;send()
           end)
           change(self.controller.rows,self.controller.snapshot,nil)
         end
@@ -219,7 +219,7 @@ function M.open(root,saved,callbacks)
         else open_file(row.path,true) end
       end
     else
-      if self.busy or self.desired_rows~=self.sent_rows then
+      if self.busy_kind=='structure' or self.desired_rows~=self.sent_rows then
         if ev.type=='input' then
           local action=self.controller.keys:feed(ev,vim.uv.now())
           local navigation={next=true,previous=true,first=true,last=true,half_down=true,half_up=true,search_next=true,search_previous=true}
@@ -232,7 +232,7 @@ function M.open(root,saved,callbacks)
     self.generation=self.generation+1
     local g=self.generation
     create_target_group()
-    self.phase='opening';self.registered={};self.asset_attempted={};self.sent_rows=nil;self.ack_revision=0;self.busy=false
+    self.phase='opening';self.registered={};self.asset_attempted={};self.sent_rows=nil;self.ack_revision=0;self.busy=false;self.busy_kind=nil
     self.controller=Controller.new({root=root,snapshot=self.snapshot_value,side=side,keys=native_options.mappings,compact=native_options.compact_folders,
       is_active=active,on_change=change,on_open=function(path) open_file(path,not self.click_open) end,
       on_close=function() self:close() end,
