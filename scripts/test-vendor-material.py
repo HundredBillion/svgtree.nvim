@@ -22,14 +22,23 @@ class ImportMaterialTest(unittest.TestCase):
         self.dest.mkdir()
         (self.dest / 'sentinel').write_text('keep')
 
-    def artifact(self, *, traversal=False, missing=False, nonsvg=False):
+    def artifact(self, *, traversal=False, missing=False, nonsvg=False,
+                 theme_dir='dist', orphan=None):
         path = self.base / 'fixture.vsix'
-        theme = {'iconDefinitions': {'file': {'iconPath': '../icons/file.png' if nonsvg else '../icons/file.svg'}}, 'file': 'file'}
+        icon_path = ('../../' if '/' in theme_dir else '../') + ('icons/file.png' if nonsvg else 'icons/file.svg')
+        theme = {'iconDefinitions': {'file': {'iconPath': icon_path}}, 'file': 'file'}
+        if orphan:
+            section, key = orphan
+            if section in module.DEFAULT_KEYS:
+                theme[section] = 'missing-id'
+            else:
+                target = theme.setdefault(section, {}) if section not in ('light', 'highContrast') else theme.setdefault(section, {}).setdefault('fileNames', {})
+                target[key] = 'missing-id'
         package = {'version': '1.0.0', 'contributes': {'iconThemes': [
-            {'id': 'material-icon-theme', 'path': './dist/material-icons.json'}]}}
+            {'id': 'material-icon-theme', 'path': './' + theme_dir + '/material-icons.json'}]}}
         with zipfile.ZipFile(path, 'w') as archive:
             archive.writestr('extension/package.json', json.dumps(package))
-            archive.writestr('extension/dist/material-icons.json', json.dumps(theme))
+            archive.writestr('extension/' + theme_dir + '/material-icons.json', json.dumps(theme))
             archive.writestr('extension/LICENSE.txt', 'MIT fixture')
             if not missing:
                 archive.writestr('extension/icons/file.svg', '<svg/>')
@@ -47,6 +56,25 @@ class ImportMaterialTest(unittest.TestCase):
         self.assertFalse((self.dest / 'sentinel').exists())
         self.assertEqual((self.dest / 'icons/file.svg').read_text(), '<svg/>')
         self.assertEqual((self.dest / 'LICENSE.txt').read_text(), 'MIT fixture')
+        provenance = json.loads((self.dest / 'provenance.json').read_text())
+        self.assertTrue(provenance['requires_release_provenance_review'])
+        self.assertNotIn('commit', provenance)
+        self.assertNotIn('artifact_url', provenance)
+
+    def test_theme_outside_dist_imports(self):
+        path, digest = self.artifact(theme_dir='themes/generated')
+        self.assertEqual(module.import_artifact(path, '1.0.0', digest, self.dest), 1)
+        self.assertTrue((self.dest / 'themes/generated/material-icons.json').is_file())
+
+    def test_orphaned_mappings_preserve_destination(self):
+        for section, key in [(name, None) for name in module.DEFAULT_KEYS] + [
+            (name, 'entry') for name in module.MAP_KEYS] + [
+            ('light', 'readme'), ('highContrast', 'readme')]:
+            with self.subTest(section=section):
+                path, digest = self.artifact(orphan=(section, key))
+                with self.assertRaisesRegex(ValueError, 'unknown icon ID'):
+                    module.import_artifact(path, '1.0.0', digest, self.dest)
+                self.assert_untouched()
 
     def test_traversal_preserves_destination(self):
         path, digest = self.artifact(traversal=True)

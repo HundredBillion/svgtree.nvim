@@ -78,8 +78,21 @@ config.setup({ pack = d })
 check(icons.resolve_pack('native').dir == d, 'native explicit path wins')
 check(icons.resolve_pack('terminal').dir == d, 'terminal explicit path wins')
 check(icons.stem('entry', 'file') == '_a', 'host adapter uses configured pack')
+local old_data = vim.env.XDG_DATA_HOME
+local isolated_data = vim.fn.tempname()
+vim.env.XDG_DATA_HOME = isolated_data
+local data_dir = vim.fn.stdpath('data')
+check(data_dir:sub(1, #isolated_data) == isolated_data, 'isolated data path')
 config.setup({ pack = 'material' })
-check(icons.resolve_pack('native').dir == material.dir or icons.resolve_pack('native').dir == pack.load('material').dir, 'material selector resolves')
+local host_dir = config.options.resolved.dir
+local installed_dir = data_dir .. '/svgtree/packs/material'
+vim.fn.mkdir(installed_dir, 'p')
+vim.fn.writefile({ vim.json.encode({ iconDefinitions = { installed = { iconPath = './installed.svg' } }, file = 'installed' }) }, installed_dir .. '/icon-theme.json')
+check(icons.resolve_pack('native').dir == installed_dir, 'installed Material wins for native')
+check(icons.resolve_pack('terminal').dir == host_dir, 'host pack remains configured while native selects installed Material')
+vim.fn.delete(installed_dir, 'rf')
+check(icons.resolve_pack('native').dir == material.dir, 'missing installed Material uses bundled')
+vim.env.XDG_DATA_HOME = old_data
 
 -- ---- load failures -> nil ----
 local cd = vim.fn.tempname(); vim.fn.mkdir(cd, 'p')

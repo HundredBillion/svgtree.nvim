@@ -12,6 +12,9 @@ from datetime import datetime, timezone
 
 DEST = Path(__file__).resolve().parents[1] / 'assets' / 'material'
 SOURCE = 'material-extensions/vscode-material-icon-theme'
+DEFAULT_KEYS = ('file', 'folder', 'folderExpanded', 'rootFolder', 'rootFolderExpanded')
+MAP_KEYS = ('fileNames', 'fileExtensions', 'folderNames', 'folderNamesExpanded',
+            'rootFolderNames', 'rootFolderNamesExpanded', 'languageIds')
 
 
 def safe_path(name):
@@ -42,8 +45,32 @@ def import_artifact(artifact, version, checksum, dest=DEST):
         defs = theme.get('iconDefinitions')
         if not isinstance(defs, dict) or not defs:
             raise ValueError('theme has no icon definitions')
+        sections = [theme]
+        all_defs = list(defs.values())
+        for variant in ('light', 'highContrast'):
+            section = theme.get(variant, {})
+            if not isinstance(section, dict):
+                raise ValueError(f'invalid {variant} section')
+            sections.append(section)
+            variant_defs = section.get('iconDefinitions', {})
+            if not isinstance(variant_defs, dict):
+                raise ValueError(f'invalid {variant} icon definitions')
+            all_defs.extend(variant_defs.values())
+        for section in sections:
+            available_defs = defs | section.get('iconDefinitions', {})
+            for key in DEFAULT_KEYS:
+                icon_id = section.get(key)
+                if icon_id is not None and icon_id not in available_defs:
+                    raise ValueError(f'unknown icon ID in {key}: {icon_id}')
+            for key in MAP_KEYS:
+                mapping = section.get(key, {})
+                if not isinstance(mapping, dict):
+                    raise ValueError(f'invalid icon mapping: {key}')
+                for icon_id in mapping.values():
+                    if icon_id not in available_defs:
+                        raise ValueError(f'unknown icon ID in {key}: {icon_id}')
         paths = set()
-        for definition in defs.values():
+        for definition in all_defs:
             icon_path = definition.get('iconPath')
             if not isinstance(icon_path, str) or PurePosixPath(icon_path).is_absolute() or PurePosixPath(icon_path).suffix.lower() != '.svg':
                 raise ValueError('non-SVG or missing iconPath')
@@ -82,15 +109,14 @@ def import_artifact(artifact, version, checksum, dest=DEST):
             (stage / 'provenance.json').write_text(json.dumps({
                 'source': SOURCE,
                 'version': version,
-                'tag': 'v' + version,
-                'commit': '448ab3977ef83b817c2c722ce7cd5034d195b39f' if version == '5.38.1' else None,
-                'artifact_url': f'https://github.com/{SOURCE}/releases/download/v{version}/material-icon-theme-{version}.vsix',
                 'artifact_sha256': actual,
                 'imported_at': datetime.now(timezone.utc).date().isoformat(),
                 'license': 'LICENSE.txt',
+                'requires_release_provenance_review': True,
             }, indent=2) + '\n')
-            for definition in defs.values():
-                resolved = (stage / 'dist' / definition['iconPath']).resolve()
+            staged_theme_dir = stage.joinpath(*theme_path.parts[1:]).parent
+            for definition in all_defs:
+                resolved = (staged_theme_dir / definition['iconPath']).resolve()
                 if not resolved.is_file() or not resolved.is_relative_to(stage.resolve()):
                     raise ValueError('staged theme mapping is invalid')
             backup = Path(tmp) / 'previous'
