@@ -329,6 +329,29 @@ require("neo-tree").setup({
 -- require("svgtree.adapters.neotree").setup({ col_offset = 1 })
 ```
 
+### fyler.nvim (experimental)
+
+Fyler remains the editable terminal-buffer file manager; this adapter overlays
+its icon cells with svgtree SVGs. It requires Fyler's custom icon-provider
+support. Set up Fyler first, then register the adapter:
+
+```lua
+local fyler_icons = require("svgtree.adapters.fyler")
+
+require("fyler").setup({
+  integrations = {
+    icon = fyler_icons.icon,
+  },
+})
+fyler_icons.setup()
+```
+
+In a terminal with Kitty graphics support (including Ghostty), Fyler's icon
+slots render svgtree images. Without image support, Fyler keeps its normal text
+layout. Sprite's embedded Neovim grid is not currently a Kitty-graphics
+terminal, so it needs Sprite-side image-placeholder support before this adapter
+can display SVG icons inside Sprite.
+
 ### bufferline.nvim (tabs)
 
 Show each buffer's icon on its tab, matching the explorer. The tabline isn't a buffer, so this adapter doesn't use the overlay engine — it returns the icon as Kitty placeholder text + a highlight whose foreground colour carries the image id, via bufferline's `get_element_icon` hook.
