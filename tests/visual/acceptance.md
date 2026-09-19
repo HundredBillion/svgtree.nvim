@@ -45,9 +45,10 @@ drag, project-header collapse, close, and restored selection/expansion/width.
 Earlier real 10,000-row runs covered offscreen `G`, wheel scrolling, independent
 scroll/selection restore, and external file creation; see the prior scroll
 checks in `native-linux/`. Headless tests cover missing API, failed or occupied
-dock fallback, native suspend/resume, active-file reveal, and explicit
-`show_hidden = false`. A final-source physical check of plugin disconnect,
-failed-open unsaved edits, and ordinary-editor suspend/resume remains pending.
+dock fallback, native suspend/resume, active-file reveal, explicit
+`show_hidden = false`, and concise unsaved-edit refusal. The final-source
+physical refusal check passed for both launch modes; plugin disconnect and
+ordinary-editor suspend/resume remain pending.
 
 The screenshots show the actual native states, but full screenshot parity is
 not claimed. VS Code initially leaves `.github` un-compacted until expansion;
