@@ -58,7 +58,7 @@ function M.open(root,saved,callbacks)
     remove_target_group()
     if reason~='suspend' and self.resume_unsub then self.resume_unsub(); self.resume_unsub=nil end
     save()
-    if reason=='requested' and callbacks.closed and not finished then finished=true; callbacks.closed() end
+    if reason~='suspend' and callbacks.closed and not finished then finished=true; callbacks.closed() end
   end
   local function active() return self.phase=='ready' and self.focused end
   local function open_file(path,focus)

@@ -26,6 +26,17 @@ local capability = require('svgtree.capability')
 local icons = require('svgtree.icons')
 
 local M = {}
+local warm_started = false
+local awaiting = {}
+
+local function start_graphics()
+  capability.detect()
+  if config.options.warm and not warm_started then
+    warm_started = true
+    local raster = require('svgtree.raster')
+    if raster.has_converter() then vim.schedule(raster.warm) end
+  end
+end
 
 -- Tunables (override via M.setup).
 M.opts = {
@@ -35,6 +46,7 @@ M.opts = {
 
 function M.setup(opts)
   M.opts = vim.tbl_extend('force', M.opts, opts or {})
+  start_graphics()
 end
 
 -- buf -> engine handle
@@ -59,7 +71,17 @@ end
 ---`after_render` handler: (re)attach the engine for this tree and reconcile.
 ---@param args table neo-tree event payload (carries the source state)
 function M.on_render(args)
+  start_graphics()
   if not capability.supported_cached() then
+    local state = args and (args.state or args)
+    local win = state and state.winid
+    if win and not awaiting[win] then
+      awaiting[win] = true
+      capability.on_resolved(function()
+        awaiting[win] = nil
+        if capability.supported_cached() then M.on_render(args) end
+      end)
+    end
     return
   end
   if not config.options.resolved then

@@ -9,7 +9,7 @@ if [ ! -f "$API/lua/sprite/input.lua" ]; then
   exit 2
 fi
 export SVGTREE_API_CHECKOUT="$API"
-scripts=(scripts/test-pack.lua scripts/test-tree.lua scripts/test-root.lua scripts/test-terminal-session.lua scripts/test-native-model.lua scripts/test-native-keys.lua scripts/test-native-navigation.lua scripts/test-native-watch.lua scripts/test-native-view.lua scripts/test-native-controller.lua scripts/test-native-dispatch.lua)
+scripts=(scripts/test-pack.lua scripts/test-tree.lua scripts/test-root.lua scripts/test-terminal-session.lua scripts/test-native-model.lua scripts/test-native-keys.lua scripts/test-native-navigation.lua scripts/test-native-watch.lua scripts/test-native-view.lua scripts/test-native-controller.lua scripts/test-native-dispatch.lua scripts/test-native-dispatch-exit.lua scripts/test-neotree-detection.lua)
 fail=0
 for s in "${scripts[@]}"; do
   echo "=== $s ==="
