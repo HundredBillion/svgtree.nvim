@@ -237,3 +237,29 @@ end
 superseded_open('state')
 superseded_open('focus')
 print('native initial freshness: ok')
+calls={}
+local serial_root=vim.fn.tempname();vim.fn.mkdir(serial_root,'p');vim.fn.writefile({'x'},serial_root..'/file.lua')
+local serial={}
+Native.open(serial_root,nil,{ready=function(v) serial.view=v end,failed=function(e) error('serialized mutation refused: '..vim.inspect(e)) end})
+calls.open(nil,new_handle())
+finish_open(serial)
+local revision_before=serial.view.ack_revision
+calls.opts.on_event({type='input',key='slash',text='/'})
+local inflight_state=calls[#calls]
+assert(inflight_state.name=='state')
+local count_before_toggle=#calls
+calls.opts.on_event({type='list_action',revision=revision_before,action='root-toggle'})
+assert(#calls==count_before_toggle,'root-toggle waits for current state acknowledgement')
+complete(inflight_state,nil)
+local update_call=calls[#calls]
+assert(update_call.name=='update' and #calls==count_before_toggle+1)
+complete(update_call,nil)
+local next_rows=calls[#calls]
+assert(next_rows.name=='rows' and #calls==count_before_toggle+2)
+complete(next_rows,nil)
+local next_state=calls[#calls]
+assert(next_state.name=='state' and next_state.args[1]==serial.view.ack_revision)
+assert(serial.view.ack_revision>revision_before)
+complete(next_state,nil)
+serial.view:close()
+print('native serialized root toggle: ok')
