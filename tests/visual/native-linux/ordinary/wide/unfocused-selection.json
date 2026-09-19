@@ -1,0 +1,261 @@
+{
+  "state": {
+    "phase": "ready",
+    "buffer": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/components/Button.tsx",
+    "focused": false,
+    "busy": false,
+    "settled": true,
+    "snapshot": {
+      "expanded": {
+        "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src": true,
+        "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/docs": true,
+        "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/styles/theme": true,
+        "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/components": true,
+        "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/styles": true,
+        "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/styles/theme/dark": true
+      },
+      "scroll": {
+        "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/.github/workflows",
+        "offset": 0,
+        "visible_rows": 50
+      },
+      "widths": {
+        "native": 400,
+        "terminal": 36
+      },
+      "search": {
+        "active": false,
+        "count": 0,
+        "query": ""
+      },
+      "root": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project",
+      "selected": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/components/Button.tsx",
+      "root_collapsed": false,
+      "terminal_topline": 1
+    }
+  },
+  "rows": [
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/.github/workflows",
+      "leading": "svgtree-chevron-right",
+      "icon": "folder-gh-workflows",
+      "guides": [],
+      "text": ".github/workflows",
+      "indent": 0
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/assets",
+      "leading": "svgtree-chevron-right",
+      "icon": "folder-resource",
+      "guides": [],
+      "text": "assets",
+      "indent": 0
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/docs",
+      "leading": "svgtree-chevron-down",
+      "icon": "folder-docs-open",
+      "guides": [],
+      "text": "docs",
+      "indent": 0
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/docs/design.md",
+      "leading": "svgtree-transparent",
+      "icon": "markdown",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/docs",
+          "offset": 8
+        }
+      ],
+      "text": "design.md",
+      "indent": 8
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/docs/\u65e5\u672c\u8a9e notes.md",
+      "leading": "svgtree-transparent",
+      "icon": "markdown",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/docs",
+          "offset": 8
+        }
+      ],
+      "text": "\u65e5\u672c\u8a9e notes.md",
+      "indent": 8
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/empty folder",
+      "leading": "svgtree-chevron-right",
+      "icon": "folder",
+      "guides": [],
+      "text": "empty folder",
+      "indent": 0
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/scripts",
+      "leading": "svgtree-chevron-right",
+      "icon": "folder-scripts",
+      "guides": [],
+      "text": "scripts",
+      "indent": 0
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src",
+      "leading": "svgtree-chevron-down",
+      "icon": "folder-src-open",
+      "guides": [],
+      "text": "src",
+      "indent": 0
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/components",
+      "leading": "svgtree-chevron-down",
+      "icon": "folder-components-open",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src",
+          "offset": 8
+        }
+      ],
+      "text": "components",
+      "indent": 8
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/components/a-very-long-component-name-that-exceeds-the-sidebar-width.test.tsx",
+      "leading": "svgtree-transparent",
+      "icon": "test-jsx",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src",
+          "offset": 8
+        },
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/components",
+          "offset": 16
+        }
+      ],
+      "text": "a-very-long-component-name-that-exceeds-the-sidebar-width.test.tsx",
+      "indent": 16
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/components/Button.test.tsx",
+      "leading": "svgtree-transparent",
+      "icon": "test-jsx",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src",
+          "offset": 8
+        },
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/components",
+          "offset": 16
+        }
+      ],
+      "text": "Button.test.tsx",
+      "indent": 16
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/components/Button.tsx",
+      "leading": "svgtree-transparent",
+      "icon": "react_ts",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src",
+          "offset": 8
+        },
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/components",
+          "offset": 16
+        }
+      ],
+      "text": "Button.tsx",
+      "indent": 16
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/styles/theme/dark",
+      "leading": "svgtree-chevron-down",
+      "icon": "folder-open",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src",
+          "offset": 8
+        }
+      ],
+      "text": "styles/theme/dark",
+      "indent": 8
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/styles/theme/dark/colors.json",
+      "leading": "svgtree-transparent",
+      "icon": "json",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src",
+          "offset": 8
+        },
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/styles/theme/dark",
+          "offset": 16
+        }
+      ],
+      "text": "colors.json",
+      "indent": 16
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src/main.rs",
+      "leading": "svgtree-transparent",
+      "icon": "rust",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/src",
+          "offset": 8
+        }
+      ],
+      "text": "main.rs",
+      "indent": 8
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/.env",
+      "leading": "svgtree-transparent",
+      "icon": "tune",
+      "guides": [],
+      "text": ".env",
+      "indent": 0
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/.gitignore",
+      "leading": "svgtree-transparent",
+      "icon": "git",
+      "guides": [],
+      "text": ".gitignore",
+      "indent": 0
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/Cargo.toml",
+      "leading": "svgtree-transparent",
+      "icon": "toml",
+      "guides": [],
+      "text": "Cargo.toml",
+      "indent": 0
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/package.json",
+      "leading": "svgtree-transparent",
+      "icon": "nodejs",
+      "guides": [],
+      "text": "package.json",
+      "indent": 0
+    },
+    {
+      "id": "/tmp/native-physical-ordinary-dvg70y4z/native-explorer-reference-project/README.md",
+      "leading": "svgtree-transparent",
+      "icon": "readme",
+      "guides": [],
+      "text": "README.md",
+      "indent": 0
+    }
+  ],
+  "width": 400
+}

@@ -1,0 +1,261 @@
+{
+  "state": {
+    "focused": false,
+    "buffer": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/components/Button.tsx",
+    "settled": true,
+    "snapshot": {
+      "expanded": {
+        "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/components": true,
+        "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/docs": true,
+        "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/styles": true,
+        "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src": true,
+        "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/styles/theme/dark": true,
+        "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/styles/theme": true
+      },
+      "widths": {
+        "terminal": 36,
+        "native": 170
+      },
+      "search": {
+        "count": 0,
+        "query": "",
+        "active": false
+      },
+      "selected": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/components/Button.tsx",
+      "terminal_topline": 1,
+      "root": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project",
+      "root_collapsed": false,
+      "scroll": {
+        "offset": 0,
+        "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/.github/workflows",
+        "visible_rows": 50
+      }
+    },
+    "busy": false,
+    "phase": "ready"
+  },
+  "rows": [
+    {
+      "icon": "folder-gh-workflows",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/.github/workflows",
+      "leading": "svgtree-chevron-right",
+      "guides": [],
+      "text": ".github/workflows",
+      "indent": 0
+    },
+    {
+      "icon": "folder-resource",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/assets",
+      "leading": "svgtree-chevron-right",
+      "guides": [],
+      "text": "assets",
+      "indent": 0
+    },
+    {
+      "icon": "folder-docs-open",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/docs",
+      "leading": "svgtree-chevron-down",
+      "guides": [],
+      "text": "docs",
+      "indent": 0
+    },
+    {
+      "icon": "markdown",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/docs/design.md",
+      "leading": "svgtree-transparent",
+      "guides": [
+        {
+          "offset": 8,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/docs"
+        }
+      ],
+      "text": "design.md",
+      "indent": 8
+    },
+    {
+      "icon": "markdown",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/docs/\u65e5\u672c\u8a9e notes.md",
+      "leading": "svgtree-transparent",
+      "guides": [
+        {
+          "offset": 8,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/docs"
+        }
+      ],
+      "text": "\u65e5\u672c\u8a9e notes.md",
+      "indent": 8
+    },
+    {
+      "icon": "folder",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/empty folder",
+      "leading": "svgtree-chevron-right",
+      "guides": [],
+      "text": "empty folder",
+      "indent": 0
+    },
+    {
+      "icon": "folder-scripts",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/scripts",
+      "leading": "svgtree-chevron-right",
+      "guides": [],
+      "text": "scripts",
+      "indent": 0
+    },
+    {
+      "icon": "folder-src-open",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src",
+      "leading": "svgtree-chevron-down",
+      "guides": [],
+      "text": "src",
+      "indent": 0
+    },
+    {
+      "icon": "folder-components-open",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/components",
+      "leading": "svgtree-chevron-down",
+      "guides": [
+        {
+          "offset": 8,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src"
+        }
+      ],
+      "text": "components",
+      "indent": 8
+    },
+    {
+      "icon": "test-jsx",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/components/a-very-long-component-name-that-exceeds-the-sidebar-width.test.tsx",
+      "leading": "svgtree-transparent",
+      "guides": [
+        {
+          "offset": 8,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src"
+        },
+        {
+          "offset": 16,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/components"
+        }
+      ],
+      "text": "a-very-long-component-name-that-exceeds-the-sidebar-width.test.tsx",
+      "indent": 16
+    },
+    {
+      "icon": "test-jsx",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/components/Button.test.tsx",
+      "leading": "svgtree-transparent",
+      "guides": [
+        {
+          "offset": 8,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src"
+        },
+        {
+          "offset": 16,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/components"
+        }
+      ],
+      "text": "Button.test.tsx",
+      "indent": 16
+    },
+    {
+      "icon": "react_ts",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/components/Button.tsx",
+      "leading": "svgtree-transparent",
+      "guides": [
+        {
+          "offset": 8,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src"
+        },
+        {
+          "offset": 16,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/components"
+        }
+      ],
+      "text": "Button.tsx",
+      "indent": 16
+    },
+    {
+      "icon": "folder-open",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/styles/theme/dark",
+      "leading": "svgtree-chevron-down",
+      "guides": [
+        {
+          "offset": 8,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src"
+        }
+      ],
+      "text": "styles/theme/dark",
+      "indent": 8
+    },
+    {
+      "icon": "json",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/styles/theme/dark/colors.json",
+      "leading": "svgtree-transparent",
+      "guides": [
+        {
+          "offset": 8,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src"
+        },
+        {
+          "offset": 16,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/styles/theme/dark"
+        }
+      ],
+      "text": "colors.json",
+      "indent": 16
+    },
+    {
+      "icon": "rust",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src/main.rs",
+      "leading": "svgtree-transparent",
+      "guides": [
+        {
+          "offset": 8,
+          "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/src"
+        }
+      ],
+      "text": "main.rs",
+      "indent": 8
+    },
+    {
+      "icon": "tune",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/.env",
+      "leading": "svgtree-transparent",
+      "guides": [],
+      "text": ".env",
+      "indent": 0
+    },
+    {
+      "icon": "git",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/.gitignore",
+      "leading": "svgtree-transparent",
+      "guides": [],
+      "text": ".gitignore",
+      "indent": 0
+    },
+    {
+      "icon": "toml",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/Cargo.toml",
+      "leading": "svgtree-transparent",
+      "guides": [],
+      "text": "Cargo.toml",
+      "indent": 0
+    },
+    {
+      "icon": "nodejs",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/package.json",
+      "leading": "svgtree-transparent",
+      "guides": [],
+      "text": "package.json",
+      "indent": 0
+    },
+    {
+      "icon": "readme",
+      "id": "/tmp/native-physical-ordinary-9zcp9123/native-explorer-reference-project/README.md",
+      "leading": "svgtree-transparent",
+      "guides": [],
+      "text": "README.md",
+      "indent": 0
+    }
+  ],
+  "width": 170
+}

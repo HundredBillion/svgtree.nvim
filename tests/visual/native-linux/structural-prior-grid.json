@@ -1,0 +1,6 @@
+{
+  "external_file_create_to_rows_ack_upper_bound_ms": 316.653334,
+  "entry_count_before": 10000,
+  "entry_count_after": 10001,
+  "includes": "filesystem watch debounce, full projection rebuild, protocol transmission and remote observer polling; not pixel presentation"
+}

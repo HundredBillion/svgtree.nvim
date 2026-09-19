@@ -1,0 +1,12 @@
+{
+  "commit": "39fb11aa3d9aeca6d421c0e58ef97567ac1417b0",
+  "mode": "grid",
+  "checks": [
+    "physical G selects last of 10000 rows and scrolls into view",
+    "physical wheel scroll changes viewport without selecting another file",
+    "public reopen restores scrolled anchor and selection independently",
+    "external create refreshes 10000-row tree without manual refresh"
+  ],
+  "scope": "actual Wayland input to Sprite on wayland-1 (scale2); screenshots cropped to test window",
+  "status": "passed"
+}

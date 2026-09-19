@@ -1,0 +1,20 @@
+{
+  "commit": "3896017cc657425728f7ad3187f7e5483c7b94d7",
+  "mode": "grid",
+  "checks": [
+    "physical j navigates",
+    "single file click opens and keeps tree focus",
+    "navigation after single click stays in tree",
+    "double file click focuses editor",
+    "double folder click expands once",
+    "h collapses folder",
+    "literal search selects; Enter accepts without opening",
+    "Enter opens and focuses editor",
+    "physical divider drag resizes sidebar to 400",
+    "physical project header toggles root collapse and expansion",
+    "q closes owned tree",
+    "public reopen restores selection, expansion and dragged width"
+  ],
+  "scope": "actual Wayland input to Sprite on wayland-1 (scale2); screenshots cropped to test window",
+  "status": "passed"
+}
