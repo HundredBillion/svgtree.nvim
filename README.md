@@ -1,3 +1,4 @@
+<img width="449" height="387" alt="Screenshot 2026-09-19 at 2 25 45 PM" src="https://github.com/user-attachments/assets/35682a88-4ec1-4ee7-bee0-bd2e07d98052" />
 # svgtree.nvim
 
 **Use VS Code SVG file icons in Sprite's native Explorer or terminal Neovim.**
@@ -17,6 +18,8 @@ other terminal, the same configuration automatically uses svgtree's terminal
 renderer instead.
 
 ![VS Code-like svgtree native Explorer](tests/visual/reference/expanded-src.png)
+
+
 
 ### LazyVim setup
 
