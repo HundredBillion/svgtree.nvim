@@ -1,0 +1,10 @@
+{
+  "fonts": [
+    {
+      "familyName": "Adwaita Sans",
+      "postScriptName": "AdwaitaSans",
+      "isCustomFont": false,
+      "glyphCount": 7
+    }
+  ]
+}

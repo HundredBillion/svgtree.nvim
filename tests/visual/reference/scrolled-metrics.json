@@ -1,0 +1,31 @@
+{
+  "scale": 2,
+  "sidebar": {
+    "x": 48,
+    "y": 35,
+    "width": 235.25,
+    "height": 511
+  },
+  "rows": [
+    "entry-09981.lua",
+    "entry-09982.lua",
+    "entry-09983.lua",
+    "entry-09984.lua",
+    "entry-09985.lua",
+    "entry-09986.lua",
+    "entry-09987.lua",
+    "entry-09988.lua",
+    "entry-09989.lua",
+    "entry-09990.lua",
+    "entry-09991.lua",
+    "entry-09992.lua",
+    "entry-09993.lua",
+    "entry-09994.lua",
+    "entry-09995.lua",
+    "entry-09996.lua",
+    "entry-09997.lua",
+    "entry-09998.lua",
+    "entry-09999.lua"
+  ],
+  "font": "13px / 22px system-ui, Ubuntu, \"Droid Sans\", sans-serif"
+}

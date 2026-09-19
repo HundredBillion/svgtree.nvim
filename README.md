@@ -1,6 +1,59 @@
 # svgtree.nvim
 
-**Use your beloved VSCode SVG file icons — in full color — inside terminal Neovim.**
+**Use VS Code SVG file icons in Sprite's native Explorer or terminal Neovim.**
+
+Sprite opens a native, resizable Explorer beside Neovim. Ordinary Neovim keeps
+the terminal tree and its image or text icon fallback. The native tree uses a
+pinned Material Icon Theme and Dark Modern colors by default; the terminal tree
+keeps the bundled starter icons unless you choose a pack.
+
+## Native Explorer in Sprite
+
+Install `svgtree.nvim` and put the optional `sprite.nvim` plugin API on
+Neovim's runtime path for native Sprite support. Ordinary Neovim needs only
+`svgtree.nvim`. Call `require('svgtree').setup({})` and open it with
+`:SvgTree [dir]` or `:SvgTreeToggle [dir]`. Sprite chooses the native view when
+its dock features are available. `renderer = 'sprite'` requests native and
+reports the reason when it must fall back; `renderer = 'terminal'` always uses
+the terminal tree. A failed native open preserves the editor's unsaved buffers
+and opens the terminal tree for the same root.
+
+For an isolated checkout demo, first materialize the visual fixture and set
+explicit checkout paths:
+
+```bash
+python3 tests/visual/generate_fixture.py project /tmp/svgtree-visual-project --revision final
+export SVGTREE_CHECKOUT="$PWD"
+export SVGTREE_API_CHECKOUT=/absolute/path/to/sprite.nvim
+export SVGTREE_FIXTURE=/tmp/svgtree-visual-project
+sprite -e nvim -u "$SVGTREE_CHECKOUT/scripts/native-demo-init.lua"
+# Alternatively, launch with the plugin's own Neovim wrapper:
+sprite -e "$SVGTREE_API_CHECKOUT/bin/sprite-nvim" -u "$SVGTREE_CHECKOUT/scripts/native-demo-init.lua"
+```
+
+The demo init changes only that Neovim process. The native width is measured in
+logical pixels (`native.width = 280` by default); the terminal width is measured
+in cells (`window.width = 36`). The demo uses 290 logical pixels to match the
+recorded reference; set `SVGTREE_NATIVE_WIDTH` for another capture width. Both
+trees show dotfiles by default; set
+`show_hidden = false` to hide them, including during search and auto-reveal.
+The native tree watches the root and expanded directories, refreshes external
+changes, and reveals the active file. It keeps expansion, selection, scroll,
+and separate native/terminal widths for a root during the Neovim session.
+
+Native keys: `j`/`k` or arrows move; `h`/`l` collapse and enter; `gg`/`G`
+move to the ends; `<C-d>`/`<C-u>` scroll; `/` searches filenames literally;
+`n`/`N` move between matches; `R` refreshes; `q` or `<Esc>` closes. `<CR>`
+opens a file and focuses the editor. A single click opens a file while keeping
+tree focus; a double click focuses the editor. Set `native.mappings` to map a
+key to an action or `false` to remove it, for example:
+
+```lua
+require('svgtree').setup({ native = { mappings = { ['<Space>'] = 'enter', j = false } } })
+```
+
+See [visual acceptance](tests/visual/acceptance.md) for reference captures and
+the current platform and manual verification status.
 
 ## The problem this solves
 
@@ -18,11 +71,11 @@ svgtree.nvim fixes that. It renders the **actual SVG icons as real, full-color i
 
 ![After: full-color SVG file icons](assets/screenshots/after.png)
 
-> ⚠️ **Experimental** proof-of-concept (it leans on Neovim's experimental `vim.ui.img` API). It's a working demo that VSCode-style icons are possible in a terminal, not yet a neo-tree replacement.
+> The terminal image path uses Neovim's experimental `vim.ui.img` capability probe.
 
 ## Install
 
-**Prerequisites** — the icons render only when all three are present. (If any is missing, svgtree degrades gracefully to text tags like `[python] foo.py`, so nothing breaks — you just don't get images.)
+**Terminal image prerequisites** — the terminal renders image icons when all three are present. Otherwise it uses text tags such as `[python] foo.py`. Sprite's native icons do not need these terminal prerequisites.
 
 - **Neovim ≥ 0.13** — currently nightly. Install it and launch it as `nvim-nightly`.
 - **A terminal that speaks the Kitty graphics protocol** — [Ghostty](https://ghostty.org/), [Kitty](https://sw.kovidgoyal.net/kitty/), or [WezTerm](https://wezfurlong.org/wezterm/).
@@ -43,7 +96,7 @@ return {
 
 No default keymap is set — bind `:SvgTreeToggle` to whatever key you like, e.g. add `keys = { { "<leader>t", "<cmd>SvgTreeToggle<cr>", desc = "Toggle svgtree" } }` to the spec above.
 
-Out of the box you get a small bundled icon set. For the full Material or vscode-icons themes, see [Icon packs](#icon-packs) below.
+The terminal tree gets the bundled starter set. For a custom theme, see [Icon packs](#icon-packs) below.
 
 ## Use it
 
@@ -80,7 +133,10 @@ Commands: `:SvgTree [dir]` opens the tree (defaults to cwd); `:SvgTreeToggle [di
 
 ## Icon packs
 
-svgtree reads **any VSCode file-icon theme directly** — it ships a small original starter set and otherwise reads a theme's own JSON in place. It stores no pack data of its own.
+svgtree reads **VS Code file-icon themes directly**. It bundles the original
+terminal starter set and Material Icon Theme 5.38.1 for the native default.
+An explicit `pack` selection applies to both renderers. Theme association keys
+can match a filename or its immediate parent and filename, case insensitively.
 
 **Install a theme** (needs `curl` + `unzip`):
 
@@ -109,7 +165,7 @@ Defaults:
 
 ```lua
 require("svgtree").setup({
-  pack = nil,            -- nil = bundled set; a name = stdpath('data')/svgtree/packs/<name>; or an absolute pack dir
+  pack = nil,            -- nil = native Material / terminal starter; a name or absolute pack path overrides both
   icon = {
     width = 2,           -- icon footprint in cells
     height = 1,
@@ -118,7 +174,9 @@ require("svgtree").setup({
   },
   window = { width = 36, side = "left" },
   indent = 2,
-  show_hidden = false,
+  show_hidden = true,   -- show dotfiles; explicit false also applies to search and reveal
+  renderer = "auto",    -- auto | sprite | terminal
+  native = { width = 280, compact_folders = true, mappings = {} }, -- logical pixels
   fallback_text = true,  -- show [id] tags when images are unavailable
 })
 ```
@@ -201,7 +259,9 @@ The hard part of putting an image in a text buffer is keeping it welded to its l
 
 Born from a deep-dive into whether VSCode-style SVG icons are possible in terminal Neovim. Built on [`vim.ui.img`](https://github.com/neovim/neovim/pull/37914) by [@chipsenkbeil](https://github.com/chipsenkbeil) and the Neovim team.
 
-The Material icon pack is the [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) by Philipp Kief and contributors ([MIT](https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE.md)); vscode-icons is by the [vscode-icons team](https://github.com/vscode-icons/vscode-icons) (MIT). svgtree bundles neither — `scripts/install-theme.sh` fetches them from [Open VSX](https://open-vsx.org/) on demand and reads each theme in place.
+The bundled Material icons are [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) 5.38.1 by Philipp Kief and contributors ([MIT](https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE.md)). [vscode-icons](https://github.com/vscode-icons/vscode-icons) is by the vscode-icons team (MIT); `scripts/install-theme.sh` can fetch custom packs from [Open VSX](https://open-vsx.org/).
+
+The native disclosure chevrons are adapted from Microsoft's [Codicons](https://github.com/microsoft/vscode-codicons) ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)); see [source and changes](assets/CODICONS-NOTICE.md).
 
 ## License
 

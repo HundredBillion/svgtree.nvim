@@ -1,0 +1,261 @@
+{
+  "state": {
+    "busy": false,
+    "settled": true,
+    "focused": false,
+    "snapshot": {
+      "search": {
+        "active": false,
+        "query": "",
+        "count": 0
+      },
+      "selected": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/components/Button.tsx",
+      "terminal_topline": 1,
+      "expanded": {
+        "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/styles/theme": true,
+        "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/components": true,
+        "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/styles/theme/dark": true,
+        "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/styles": true,
+        "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src": true,
+        "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/docs": true
+      },
+      "widths": {
+        "native": 170,
+        "terminal": 36
+      },
+      "scroll": {
+        "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/.github/workflows",
+        "visible_rows": 50,
+        "offset": 0
+      },
+      "root_collapsed": false,
+      "root": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project"
+    },
+    "phase": "ready",
+    "buffer": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/components/Button.tsx"
+  },
+  "rows": [
+    {
+      "text": ".github/workflows",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/.github/workflows",
+      "indent": 0,
+      "leading": "svgtree-chevron-right",
+      "icon": "folder-gh-workflows",
+      "guides": []
+    },
+    {
+      "text": "assets",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/assets",
+      "indent": 0,
+      "leading": "svgtree-chevron-right",
+      "icon": "folder-resource",
+      "guides": []
+    },
+    {
+      "text": "docs",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/docs",
+      "indent": 0,
+      "leading": "svgtree-chevron-down",
+      "icon": "folder-docs-open",
+      "guides": []
+    },
+    {
+      "text": "design.md",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/docs/design.md",
+      "indent": 8,
+      "leading": "svgtree-transparent",
+      "icon": "markdown",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/docs",
+          "offset": 8
+        }
+      ]
+    },
+    {
+      "text": "\u65e5\u672c\u8a9e notes.md",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/docs/\u65e5\u672c\u8a9e notes.md",
+      "indent": 8,
+      "leading": "svgtree-transparent",
+      "icon": "markdown",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/docs",
+          "offset": 8
+        }
+      ]
+    },
+    {
+      "text": "empty folder",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/empty folder",
+      "indent": 0,
+      "leading": "svgtree-chevron-right",
+      "icon": "folder",
+      "guides": []
+    },
+    {
+      "text": "scripts",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/scripts",
+      "indent": 0,
+      "leading": "svgtree-chevron-right",
+      "icon": "folder-scripts",
+      "guides": []
+    },
+    {
+      "text": "src",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src",
+      "indent": 0,
+      "leading": "svgtree-chevron-down",
+      "icon": "folder-src-open",
+      "guides": []
+    },
+    {
+      "text": "components",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/components",
+      "indent": 8,
+      "leading": "svgtree-chevron-down",
+      "icon": "folder-components-open",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src",
+          "offset": 8
+        }
+      ]
+    },
+    {
+      "text": "a-very-long-component-name-that-exceeds-the-sidebar-width.test.tsx",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/components/a-very-long-component-name-that-exceeds-the-sidebar-width.test.tsx",
+      "indent": 16,
+      "leading": "svgtree-transparent",
+      "icon": "test-jsx",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src",
+          "offset": 8
+        },
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/components",
+          "offset": 16
+        }
+      ]
+    },
+    {
+      "text": "Button.test.tsx",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/components/Button.test.tsx",
+      "indent": 16,
+      "leading": "svgtree-transparent",
+      "icon": "test-jsx",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src",
+          "offset": 8
+        },
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/components",
+          "offset": 16
+        }
+      ]
+    },
+    {
+      "text": "Button.tsx",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/components/Button.tsx",
+      "indent": 16,
+      "leading": "svgtree-transparent",
+      "icon": "react_ts",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src",
+          "offset": 8
+        },
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/components",
+          "offset": 16
+        }
+      ]
+    },
+    {
+      "text": "styles/theme/dark",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/styles/theme/dark",
+      "indent": 8,
+      "leading": "svgtree-chevron-down",
+      "icon": "folder-open",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src",
+          "offset": 8
+        }
+      ]
+    },
+    {
+      "text": "colors.json",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/styles/theme/dark/colors.json",
+      "indent": 16,
+      "leading": "svgtree-transparent",
+      "icon": "json",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src",
+          "offset": 8
+        },
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/styles/theme/dark",
+          "offset": 16
+        }
+      ]
+    },
+    {
+      "text": "main.rs",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src/main.rs",
+      "indent": 8,
+      "leading": "svgtree-transparent",
+      "icon": "rust",
+      "guides": [
+        {
+          "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/src",
+          "offset": 8
+        }
+      ]
+    },
+    {
+      "text": ".env",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/.env",
+      "indent": 0,
+      "leading": "svgtree-transparent",
+      "icon": "tune",
+      "guides": []
+    },
+    {
+      "text": ".gitignore",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/.gitignore",
+      "indent": 0,
+      "leading": "svgtree-transparent",
+      "icon": "git",
+      "guides": []
+    },
+    {
+      "text": "Cargo.toml",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/Cargo.toml",
+      "indent": 0,
+      "leading": "svgtree-transparent",
+      "icon": "toml",
+      "guides": []
+    },
+    {
+      "text": "package.json",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/package.json",
+      "indent": 0,
+      "leading": "svgtree-transparent",
+      "icon": "nodejs",
+      "guides": []
+    },
+    {
+      "text": "README.md",
+      "id": "/tmp/native-physical-grid-z2359ml2/native-explorer-reference-project/README.md",
+      "indent": 0,
+      "leading": "svgtree-transparent",
+      "icon": "readme",
+      "guides": []
+    }
+  ],
+  "width": 170
+}

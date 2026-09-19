@@ -1,0 +1,113 @@
+{
+  "state": {
+    "phase": "ready",
+    "settled": true,
+    "busy": false,
+    "focused": true,
+    "buffer": "",
+    "snapshot": {
+      "root_collapsed": false,
+      "search": {
+        "active": false,
+        "query": "",
+        "count": 0
+      },
+      "terminal_topline": 1,
+      "selected": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project/.github/workflows",
+      "widths": {
+        "native": 290,
+        "terminal": 36
+      },
+      "expanded": [],
+      "root": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project",
+      "scroll": {
+        "visible_rows": 50,
+        "offset": 0,
+        "id": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project/.github/workflows"
+      }
+    }
+  },
+  "rows": [
+    {
+      "text": ".github/workflows",
+      "guides": [],
+      "id": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project/.github/workflows",
+      "indent": 0,
+      "icon": "folder-gh-workflows",
+      "leading": "svgtree-chevron-right"
+    },
+    {
+      "text": "assets",
+      "guides": [],
+      "id": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project/assets",
+      "indent": 0,
+      "icon": "folder-resource",
+      "leading": "svgtree-chevron-right"
+    },
+    {
+      "text": "docs",
+      "guides": [],
+      "id": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project/docs",
+      "indent": 0,
+      "icon": "folder-docs",
+      "leading": "svgtree-chevron-right"
+    },
+    {
+      "text": "scripts",
+      "guides": [],
+      "id": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project/scripts",
+      "indent": 0,
+      "icon": "folder-scripts",
+      "leading": "svgtree-chevron-right"
+    },
+    {
+      "text": "src",
+      "guides": [],
+      "id": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project/src",
+      "indent": 0,
+      "icon": "folder-src",
+      "leading": "svgtree-chevron-right"
+    },
+    {
+      "text": ".env",
+      "guides": [],
+      "id": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project/.env",
+      "indent": 0,
+      "icon": "tune",
+      "leading": "svgtree-transparent"
+    },
+    {
+      "text": ".gitignore",
+      "guides": [],
+      "id": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project/.gitignore",
+      "indent": 0,
+      "icon": "git",
+      "leading": "svgtree-transparent"
+    },
+    {
+      "text": "Cargo.toml",
+      "guides": [],
+      "id": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project/Cargo.toml",
+      "indent": 0,
+      "icon": "toml",
+      "leading": "svgtree-transparent"
+    },
+    {
+      "text": "package.json",
+      "guides": [],
+      "id": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project/package.json",
+      "indent": 0,
+      "icon": "nodejs",
+      "leading": "svgtree-transparent"
+    },
+    {
+      "text": "README.md",
+      "guides": [],
+      "id": "/tmp/native-physical-grid-wbnzakcz/native-explorer-reference-project/README.md",
+      "indent": 0,
+      "icon": "readme",
+      "leading": "svgtree-transparent"
+    }
+  ],
+  "width": 290
+}

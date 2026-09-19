@@ -38,3 +38,18 @@ font-only/missing entries resolve to no icon.
 A key into the theme's `iconDefinitions`. The resolver yields an iconId; the
 raster step turns its `iconPath` (resolved against the pack dir) into a cached
 image. The engine transmits one image per unique iconId.
+
+## Native Tree
+
+The Explorer shown in Sprite's own dock. It shares the tree's root and state
+with the terminal view while using Sprite's native drawing and input.
+
+## Terminal Tree
+
+The Explorer shown inside a Neovim window. It is used in ordinary Neovim and
+when the Native Tree cannot open.
+
+## Tree State
+
+The current root's expansion, selection, scroll position and view widths,
+retained for reopening within the Neovim session.

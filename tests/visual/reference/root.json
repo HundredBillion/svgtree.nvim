@@ -1,0 +1,62 @@
+[
+  {
+    "text": ".github",
+    "classes": "monaco-list-row",
+    "background": "rgba(0, 0, 0, 0)",
+    "height": 22
+  },
+  {
+    "text": "assets",
+    "classes": "monaco-list-row",
+    "background": "rgba(0, 0, 0, 0)",
+    "height": 22
+  },
+  {
+    "text": "docs",
+    "classes": "monaco-list-row",
+    "background": "rgba(0, 0, 0, 0)",
+    "height": 22
+  },
+  {
+    "text": "scripts",
+    "classes": "monaco-list-row",
+    "background": "rgba(0, 0, 0, 0)",
+    "height": 22
+  },
+  {
+    "text": "src",
+    "classes": "monaco-list-row",
+    "background": "rgba(0, 0, 0, 0)",
+    "height": 22
+  },
+  {
+    "text": ".env",
+    "classes": "monaco-list-row",
+    "background": "rgba(0, 0, 0, 0)",
+    "height": 22
+  },
+  {
+    "text": ".gitignore",
+    "classes": "monaco-list-row",
+    "background": "rgba(0, 0, 0, 0)",
+    "height": 22
+  },
+  {
+    "text": "Cargo.toml",
+    "classes": "monaco-list-row",
+    "background": "rgba(0, 0, 0, 0)",
+    "height": 22
+  },
+  {
+    "text": "package.json",
+    "classes": "monaco-list-row",
+    "background": "rgba(0, 0, 0, 0)",
+    "height": 22
+  },
+  {
+    "text": "README.md",
+    "classes": "monaco-list-row",
+    "background": "rgba(0, 0, 0, 0)",
+    "height": 22
+  }
+]

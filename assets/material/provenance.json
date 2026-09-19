@@ -1,0 +1,10 @@
+{
+  "source": "material-extensions/vscode-material-icon-theme",
+  "version": "5.38.1",
+  "tag": "v5.38.1",
+  "commit": "448ab3977ef83b817c2c722ce7cd5034d195b39f",
+  "artifact_url": "https://github.com/material-extensions/vscode-material-icon-theme/releases/download/v5.38.1/material-icon-theme-5.38.1.vsix",
+  "artifact_sha256": "fa7515831a2d68b1f78bd02de40f96260bfe74efb03a238c2bde70265e04b696",
+  "imported_at": "2026-09-19",
+  "license": "LICENSE.txt"
+}

@@ -1,0 +1,340 @@
+{
+  "schemaVersion": 1,
+  "purpose": "VS Code Explorer visual reference; not Sprite parity evidence",
+  "source": {
+    "product": "Visual Studio Code",
+    "version": "1.133.0",
+    "commit": "a5b500951314efd502d07465bd138dfbd714a960",
+    "iconTheme": {
+      "name": "Material Icon Theme",
+      "id": "material-icon-theme",
+      "version": "5.38.1",
+      "releaseUrl": "https://github.com/material-extensions/vscode-material-icon-theme/releases/tag/v5.38.1",
+      "vsixSha256": "fa7515831a2d68b1f78bd02de40f96260bfe74efb03a238c2bde70265e04b696"
+    },
+    "colorTheme": "Dark Modern",
+    "profile": "clean temporary user-data directory and extension directory",
+    "settings": {
+      "workbench.colorTheme": "Dark Modern",
+      "workbench.iconTheme": "material-icon-theme",
+      "workbench.startupEditor": "none",
+      "window.restoreWindows": "none",
+      "window.zoomLevel": 0,
+      "telemetry.telemetryLevel": "off",
+      "update.mode": "none",
+      "extensions.autoUpdate": "off",
+      "explorer.compactFolders": true,
+      "security.workspace.trust.enabled": false
+    },
+    "uiFont": {
+      "css": "system-ui, Ubuntu, \"Droid Sans\", sans-serif",
+      "resolved": "Adwaita Sans",
+      "evidence": "Chrome CSS.getPlatformFontsForNode on Explorer label"
+    },
+    "displayScale": 2,
+    "captureDate": "2026-09-19"
+  },
+  "fixture": {
+    "project": "project",
+    "emptyDirectories": [
+      "empty folder"
+    ],
+    "performance": {
+      "generator": "generate_fixture.py",
+      "entries": 10000,
+      "namePattern": "entry-%05d.lua",
+      "materialize": "python3 tests/visual/generate_fixture.py performance DESTINATION"
+    },
+    "projectRevisions": {
+      "initial": "Before long component, empty folder, and Unicode notes were added",
+      "long-empty": "After long component and empty folder; before Unicode notes",
+      "final": "All reference project entries"
+    },
+    "materialize": "python3 tests/visual/generate_fixture.py project DESTINATION --revision REVISION"
+  },
+  "metrics": {
+    "sidebarBackground": "#181818",
+    "sidebarForeground": "#cccccc",
+    "palette": {
+      "sideBar-background": "#181818",
+      "sideBar-foreground": "#cccccc",
+      "sideBarTitle-foreground": "#cccccc",
+      "sideBarSectionHeader-background": "#181818",
+      "sideBarSectionHeader-foreground": "#cccccc",
+      "list-activeSelectionBackground": "#04395e",
+      "list-activeSelectionForeground": "#ffffff",
+      "list-inactiveSelectionBackground": "#37373d",
+      "list-inactiveSelectionForeground": "#cccccc",
+      "list-hoverBackground": "#2a2d2e",
+      "list-hoverForeground": "#cccccc",
+      "list-focusOutline": "#0078d4",
+      "focusBorder": "#0078d4",
+      "tree-indentGuidesStroke": "#585858",
+      "tree-inactiveIndentGuidesStroke": "rgba(88, 88, 88, 0.4)",
+      "scrollbarSlider-background": "rgba(121, 121, 121, 0.4)",
+      "scrollbarSlider-hoverBackground": "rgba(100, 100, 100, 0.7)",
+      "scrollbarSlider-activeBackground": "rgba(191, 191, 191, 0.4)"
+    },
+    "header": {
+      "height": 35,
+      "fontSize": 11,
+      "weight": 400,
+      "leftInset": 20
+    },
+    "section": {
+      "height": 22,
+      "fontSize": 11,
+      "weight": 700,
+      "leftInset": 20
+    },
+    "row": {
+      "height": 22,
+      "fontSize": 13,
+      "lineHeight": 22,
+      "rootLabelXRelativeToSidebar": 52,
+      "rootLabelXInCapturedWindow": 100,
+      "indentStep": 8,
+      "indentGuideStartXRelativeToSidebar": 16,
+      "indentGuideStep": 8,
+      "twistiePaddingLeftRoot": 8,
+      "twistiePaddingRight": 6
+    },
+    "icon": {
+      "size": 16,
+      "textGap": 6
+    },
+    "sidebar": {
+      "x": 48,
+      "y": 35
+    },
+    "depthEvidence": {
+      "path": "reference/depth-metrics.json",
+      "context": "Actual VS Code Explorer with sidebar search open at 400 logical pixels; row y coordinates include the search bar and must not be transferred to default-state screenshots",
+      "coordinateSpace": "x coordinates are relative to the sidebar"
+    }
+  },
+  "states": {
+    "root": {
+      "image": "reference/root.png",
+      "rows": "reference/root.json",
+      "pixels": {
+        "width": 580,
+        "height": 2186
+      },
+      "logical": {
+        "width": 290.0,
+        "height": 1093.0
+      },
+      "rowCount": 10,
+      "fixture": "project",
+      "fixtureRevision": "initial"
+    },
+    "expanded-src": {
+      "image": "reference/expanded-src.png",
+      "rows": "reference/expanded-src.json",
+      "pixels": {
+        "width": 580,
+        "height": 2186
+      },
+      "logical": {
+        "width": 290.0,
+        "height": 1093.0
+      },
+      "rowCount": 13,
+      "fixture": "project",
+      "fixtureRevision": "initial"
+    },
+    "expanded-components": {
+      "image": "reference/expanded-components.png",
+      "rows": "reference/expanded-components.json",
+      "pixels": {
+        "width": 580,
+        "height": 2186
+      },
+      "logical": {
+        "width": 290.0,
+        "height": 1093.0
+      },
+      "rowCount": 15,
+      "fixture": "project",
+      "fixtureRevision": "initial"
+    },
+    "selected-file": {
+      "image": "reference/selected-file.png",
+      "rows": "reference/selected-file.json",
+      "pixels": {
+        "width": 580,
+        "height": 2186
+      },
+      "logical": {
+        "width": 290.0,
+        "height": 1093.0
+      },
+      "rowCount": 15,
+      "fixture": "project",
+      "fixtureRevision": "initial"
+    },
+    "hover-file": {
+      "image": "reference/hover-file.png",
+      "rows": "reference/hover-file.json",
+      "pixels": {
+        "width": 580,
+        "height": 2186
+      },
+      "logical": {
+        "width": 290.0,
+        "height": 1093.0
+      },
+      "rowCount": 15,
+      "fixture": "project",
+      "fixtureRevision": "initial"
+    },
+    "expanded-with-long-label": {
+      "image": "reference/expanded-with-long-label.png",
+      "rows": "reference/expanded-with-long-label.json",
+      "pixels": {
+        "width": 580,
+        "height": 2186
+      },
+      "logical": {
+        "width": 290.0,
+        "height": 1093.0
+      },
+      "rowCount": 17,
+      "fixture": "project",
+      "fixtureRevision": "long-empty"
+    },
+    "compact-chain": {
+      "image": "reference/compact-chain.png",
+      "rows": "reference/compact-chain.json",
+      "pixels": {
+        "width": 580,
+        "height": 2186
+      },
+      "logical": {
+        "width": 290.0,
+        "height": 1093.0
+      },
+      "rowCount": 18,
+      "fixture": "project",
+      "fixtureRevision": "long-empty"
+    },
+    "unicode-spaces-empty": {
+      "image": "reference/unicode-spaces-empty.png",
+      "rows": "reference/unicode-spaces-empty.json",
+      "pixels": {
+        "width": 580,
+        "height": 2186
+      },
+      "logical": {
+        "width": 290.0,
+        "height": 1093.0
+      },
+      "rowCount": 20,
+      "fixture": "project",
+      "fixtureRevision": "final"
+    },
+    "unfocused-selection": {
+      "image": "reference/unfocused-selection.png",
+      "rows": "reference/unfocused-selection.json",
+      "pixels": {
+        "width": 580,
+        "height": 2186
+      },
+      "logical": {
+        "width": 290.0,
+        "height": 1093.0
+      },
+      "rowCount": 20,
+      "fixture": "project",
+      "fixtureRevision": "final"
+    },
+    "narrow": {
+      "image": "reference/narrow.png",
+      "rows": "reference/narrow.json",
+      "pixels": {
+        "width": 340,
+        "height": 2186
+      },
+      "logical": {
+        "width": 170.0,
+        "height": 1093.0
+      },
+      "rowCount": 20,
+      "fixture": "project",
+      "fixtureRevision": "final"
+    },
+    "wide": {
+      "image": "reference/wide.png",
+      "rows": "reference/wide.json",
+      "pixels": {
+        "width": 800,
+        "height": 2186
+      },
+      "logical": {
+        "width": 400.0,
+        "height": 1093.0
+      },
+      "rowCount": 20,
+      "fixture": "project",
+      "fixtureRevision": "final"
+    },
+    "scrolled": {
+      "image": "reference/scrolled.png",
+      "rows": "reference/scrolled.json",
+      "pixels": {
+        "width": 470,
+        "height": 1022
+      },
+      "logical": {
+        "width": 235.0,
+        "height": 511.0
+      },
+      "rowCount": 19,
+      "fixture": "performance",
+      "scrollPosition": "bottom",
+      "fixtureRevision": "performance"
+    },
+    "performance-initial": {
+      "image": "reference/performance-initial.png",
+      "rows": "reference/performance-initial.json",
+      "pixels": {
+        "width": 470,
+        "height": 1022
+      },
+      "logical": {
+        "width": 235.0,
+        "height": 511.0
+      },
+      "rowCount": 19,
+      "fixture": "performance",
+      "fixtureRevision": "performance"
+    },
+    "tree-search": {
+      "image": "reference/tree-search.png",
+      "rows": "reference/tree-search.json",
+      "pixels": {
+        "width": 800,
+        "height": 2186
+      },
+      "logical": {
+        "width": 400.0,
+        "height": 1093.0
+      },
+      "rowCount": 20,
+      "fixture": "project",
+      "query": "Button",
+      "input": "Type to search",
+      "note": "Explorer sidebar search; tree rows remain visible",
+      "fixtureRevision": "final"
+    }
+  },
+  "measurementNotes": [
+    "Palette values are effective computed VS Code colors. Empty foreground variables inherit #cccccc from the sidebar.",
+    "Pixel dimensions and logical dimensions are recorded per capture; width varies by state.",
+    "Default screenshots are 290 logical pixels wide at scale 2.",
+    "Original DOM row snapshots accompany each image.",
+    "Early screenshots were captured while the same reference project was being expanded; use each state fixtureRevision to reproduce its contents.",
+    "Compact chain rows can retain logical ARIA levels while using the physical indent of a shallower visible row; use measured indent widths and label positions for rendering."
+  ]
+}

@@ -11,6 +11,7 @@ local icons = require('svgtree.icons')
 local Tree = require('svgtree.tree')
 local winlock = require('svgtree.winlock')
 local text = require('svgtree.text')
+local State = require('svgtree.state')
 
 local M = {}
 
@@ -82,6 +83,7 @@ local function close()
   if not view then
     return
   end
+  State.save(view.tree.root, M.snapshot())
   pcall(vim.api.nvim_del_augroup_by_id, view.grp)
   if view.engine then
     view.engine.detach()
@@ -135,18 +137,36 @@ local function map(lhs, fn)
   vim.keymap.set('n', lhs, fn, { buffer = view.buf, nowait = true, silent = true })
 end
 
+function M.snapshot()
+  if not view then return nil end
+  local cursor = vim.api.nvim_win_is_valid(view.win) and vim.api.nvim_win_get_cursor(view.win)[1] or 1
+  local top = vim.api.nvim_win_is_valid(view.win) and vim.api.nvim_win_call(view.win, function() return vim.fn.line('w0') end) or 1
+  local selected = view.nodes[cursor] and view.nodes[cursor].path or nil
+  local anchor = view.nodes[top] and view.nodes[top].path or nil
+  local snapshot = State.get(view.tree.root)
+  snapshot.expanded = vim.deepcopy(view.tree.expanded)
+  snapshot.selected = selected
+  snapshot.scroll = {id = anchor, offset = 0}
+  snapshot.terminal_topline = top
+  snapshot.widths.terminal = vim.api.nvim_win_is_valid(view.win) and vim.api.nvim_win_get_width(view.win) or config.options.window.width
+  return snapshot
+end
+
 ---@param root? string defaults to cwd
-function M.open(root)
+function M.open(root, saved)
   if view then
     close()
   end
   root = root or vim.uv.cwd()
+  local existing
+  if not saved then saved, existing = State.get(root) else existing = true end
 
   local prev_win = vim.api.nvim_get_current_win()
   local cmd = config.options.window.side == 'right' and 'botright vsplit' or 'topleft vsplit'
   vim.cmd(cmd)
   local win = vim.api.nvim_get_current_win()
-  vim.api.nvim_win_set_width(win, config.options.window.width)
+  local requested_width = existing and saved.widths and saved.widths.terminal or config.options.window.width
+  vim.api.nvim_win_set_width(win, math.max(1, math.min(requested_width, vim.o.columns - 2)))
 
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_win_set_buf(win, buf)
@@ -178,6 +198,9 @@ function M.open(root)
     grp = grp,
     images = capability.supported(),
   }
+  for path, expanded in pairs(saved.expanded or {}) do
+    if expanded and vim.uv.fs_stat(path) then view.tree.expanded[path] = true end
+  end
 
   -- Weld an icon to each visible line via the shared placement engine. It
   -- owns its own augroup and self-binds scroll/resize, so render.lua only
@@ -229,6 +252,18 @@ function M.open(root)
   })
 
   rebuild()
+  local selected = State.reconcile(vim.tbl_map(function(node) return {id=node.path,chain={node.path}} end, view.nodes), saved.selected)
+  local row = 1
+  for i, node in ipairs(view.nodes) do if node.path == selected then row = i; break end end
+  if #view.nodes > 0 then vim.api.nvim_win_set_cursor(win, {row, 0}) end
+  local top = saved.scroll and saved.scroll.id
+  local top_row = nil
+  for i, node in ipairs(view.nodes) do if node.path == top then top_row = i; break end end
+  top_row = top_row or math.min(saved.terminal_topline or 1, math.max(1, #view.nodes))
+  vim.api.nvim_win_call(win, function()
+    vim.cmd('normal! zt')
+    vim.fn.winrestview({topline=top_row, lnum=row, col=0})
+  end)
   vim.api.nvim_set_current_win(win)
 end
 

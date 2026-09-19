@@ -1,0 +1,113 @@
+{
+  "state": {
+    "buffer": "",
+    "snapshot": {
+      "scroll": {
+        "id": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project/.github/workflows",
+        "offset": 0,
+        "visible_rows": 50
+      },
+      "root_collapsed": false,
+      "terminal_topline": 1,
+      "expanded": [],
+      "selected": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project/.github/workflows",
+      "root": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project",
+      "widths": {
+        "terminal": 36,
+        "native": 290
+      },
+      "search": {
+        "query": "",
+        "active": false,
+        "count": 0
+      }
+    },
+    "phase": "ready",
+    "settled": true,
+    "focused": true,
+    "busy": false
+  },
+  "rows": [
+    {
+      "text": ".github/workflows",
+      "icon": "folder-gh-workflows",
+      "leading": "svgtree-chevron-right",
+      "indent": 0,
+      "guides": [],
+      "id": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project/.github/workflows"
+    },
+    {
+      "text": "assets",
+      "icon": "folder-resource",
+      "leading": "svgtree-chevron-right",
+      "indent": 0,
+      "guides": [],
+      "id": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project/assets"
+    },
+    {
+      "text": "docs",
+      "icon": "folder-docs",
+      "leading": "svgtree-chevron-right",
+      "indent": 0,
+      "guides": [],
+      "id": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project/docs"
+    },
+    {
+      "text": "scripts",
+      "icon": "folder-scripts",
+      "leading": "svgtree-chevron-right",
+      "indent": 0,
+      "guides": [],
+      "id": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project/scripts"
+    },
+    {
+      "text": "src",
+      "icon": "folder-src",
+      "leading": "svgtree-chevron-right",
+      "indent": 0,
+      "guides": [],
+      "id": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project/src"
+    },
+    {
+      "text": ".env",
+      "icon": "tune",
+      "leading": "svgtree-transparent",
+      "indent": 0,
+      "guides": [],
+      "id": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project/.env"
+    },
+    {
+      "text": ".gitignore",
+      "icon": "git",
+      "leading": "svgtree-transparent",
+      "indent": 0,
+      "guides": [],
+      "id": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project/.gitignore"
+    },
+    {
+      "text": "Cargo.toml",
+      "icon": "toml",
+      "leading": "svgtree-transparent",
+      "indent": 0,
+      "guides": [],
+      "id": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project/Cargo.toml"
+    },
+    {
+      "text": "package.json",
+      "icon": "nodejs",
+      "leading": "svgtree-transparent",
+      "indent": 0,
+      "guides": [],
+      "id": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project/package.json"
+    },
+    {
+      "text": "README.md",
+      "icon": "readme",
+      "leading": "svgtree-transparent",
+      "indent": 0,
+      "guides": [],
+      "id": "/tmp/native-physical-ordinary-54w0kdbe/native-explorer-reference-project/README.md"
+    }
+  ],
+  "width": 290
+}

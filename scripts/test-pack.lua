@@ -26,6 +26,34 @@ check(pack.resolve(theme, 'src', 'dir', false) == '_src', 'folderNames -> _src')
 check(pack.resolve(theme, 'lib', 'dir', false) == '_f', 'unmatched folder -> folder')
 check(pack.resolve(theme, 'lib', 'dir', true) == '_fo', 'open unmatched folder -> folderExpanded')
 check(pack.resolve({ iconDefinitions = {}, folder = '_f' }, 'lib', 'dir', true) == '_f', 'no folderExpanded -> folder')
+local compound = {
+  iconDefinitions = {}, file = 'generic',
+  fileNames = { ['special.d.ts'] = 'named' },
+  fileExtensions = { ['d.ts'] = 'declaration', ts = 'typescript' },
+  folder = 'folder', folderExpanded = 'open-folder',
+  rootFolder = 'root', rootFolderExpanded = 'open-root',
+}
+check(pack.resolve(compound, 'file.d.ts', 'file', false) == 'declaration', 'compound extension')
+check(pack.resolve(compound, 'special.d.ts', 'file', false) == 'named', 'exact filename precedes extension')
+check(pack.resolve(compound, 'other.ts', 'file', false) == 'typescript', 'simple extension')
+check(pack.resolve(compound, 'root', 'dir', false, { root = true }) == 'root', 'root folder')
+check(pack.resolve(compound, 'root', 'dir', true, { root = true }) == 'open-root', 'open root folder')
+check(pack.resolve({ folder = 'folder' }, 'root', 'dir', true, { root = true }) == 'folder', 'root fallback')
+local contextual = {
+  folder = 'folder', folderExpanded = 'folder-open', file = 'file',
+  folderNames = { workflows = 'generic-workflows', ['.github/workflows'] = 'github-workflows' },
+  folderNamesExpanded = { ['.github/workflows'] = 'github-workflows-open', ISSUE_TEMPLATE = 'issues-open' },
+  fileNames = { ['.config/graphqlrc'] = 'graphql-config', graphqlrc = 'generic-config' },
+  fileExtensions = { ['d.ts'] = 'declaration', ['prisma/d.ts'] = 'prisma-declaration', ['other/ts'] = 'other-typescript' },
+}
+check(pack.resolve(contextual, 'workflows', 'dir', false, { parent = '.github' }) == 'github-workflows', 'qualified closed folder')
+check(pack.resolve(contextual, 'workflows', 'dir', true, { parent = '.github' }) == 'github-workflows-open', 'qualified open folder')
+check(pack.resolve(contextual, 'workflows', 'dir', false, { parent = 'unrelated' }) == 'generic-workflows', 'unrelated parent does not qualify')
+check(pack.resolve(contextual, 'ISSUE_TEMPLATE', 'dir', true) == 'issues-open', 'mixed-case theme key')
+check(pack.resolve(contextual, 'graphqlrc', 'file', false, { parent = '.config' }) == 'graphql-config', 'qualified filename precedes basename')
+check(pack.resolve(contextual, 'schema.d.ts', 'file', false, { parent = 'prisma' }) == 'prisma-declaration', 'qualified extension precedes basename extension')
+check(pack.resolve(contextual, 'schema.d.ts', 'file', false, { parent = 'unrelated' }) == 'declaration', 'unrelated extension context')
+check(pack.resolve(contextual, 'schema.d.ts', 'file', false, { parent = 'other' }) == 'other-typescript', 'short qualified extension precedes long plain extension')
 
 -- ---- pure icon_svg ----
 check(pack.icon_svg(theme, '/p', '_py') == '/p/py.svg', 'icon_svg resolves iconPath')
@@ -54,6 +82,35 @@ local b = pack.load(nil)
 check(b ~= nil and type(b.theme.iconDefinitions) == 'table', 'bundled loads')
 check(b ~= nil and pack.resolve(b.theme, 'main.py', 'file') == 'python', 'bundled resolves py -> python')
 check(b ~= nil and pack.resolve(b.theme, 'src', 'dir', false) == 'directory', 'bundled folder default -> directory')
+local material = pack.load_bundled_material()
+check(material ~= nil and material.theme.iconDefinitions ~= nil, 'bundled material loads')
+check(pack.resolve(material.theme, 'workflows', 'dir', false, { parent = '.github' }) == 'folder-gh-workflows', 'bundled Material contextual folder')
+check(pack.resolve(material.theme, 'workflows', 'dir', true, { parent = '.github' }) == 'folder-gh-workflows-open', 'bundled Material contextual expanded folder')
+check(pack.resolve(material.theme, 'graphqlrc', 'file', false, { parent = '.config' }) == 'graphql', 'bundled Material contextual filename')
+local icons = require('svgtree.icons')
+local native = icons.resolve_pack('native')
+check(native ~= nil and native.dir == material.dir, 'native default uses Material')
+check(icons.resolve_pack('terminal').dir == b.dir, 'terminal default uses starter')
+local config = require('svgtree.config')
+config.setup({ pack = d })
+check(icons.resolve_pack('native').dir == d, 'native explicit path wins')
+check(icons.resolve_pack('terminal').dir == d, 'terminal explicit path wins')
+check(icons.stem('entry', 'file') == '_a', 'host adapter uses configured pack')
+local old_data = vim.env.XDG_DATA_HOME
+local isolated_data = vim.fn.tempname()
+vim.env.XDG_DATA_HOME = isolated_data
+local data_dir = vim.fn.stdpath('data')
+check(data_dir:sub(1, #isolated_data) == isolated_data, 'isolated data path')
+config.setup({ pack = 'material' })
+local host_dir = config.options.resolved.dir
+local installed_dir = data_dir .. '/svgtree/packs/material'
+vim.fn.mkdir(installed_dir, 'p')
+vim.fn.writefile({ vim.json.encode({ iconDefinitions = { installed = { iconPath = './installed.svg' } }, file = 'installed' }) }, installed_dir .. '/icon-theme.json')
+check(icons.resolve_pack('native').dir == installed_dir, 'installed Material wins for native')
+check(icons.resolve_pack('terminal').dir == host_dir, 'host pack remains configured while native selects installed Material')
+vim.fn.delete(installed_dir, 'rf')
+check(icons.resolve_pack('native').dir == material.dir, 'missing installed Material uses bundled')
+vim.env.XDG_DATA_HOME = old_data
 
 -- ---- load failures -> nil ----
 local cd = vim.fn.tempname(); vim.fn.mkdir(cd, 'p')
