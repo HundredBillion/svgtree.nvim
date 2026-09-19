@@ -104,7 +104,12 @@ assert(calls[#calls].name=='focus_editor','same-revision double click focuses du
 pending_search.args[#pending_search.args](nil)
 local original_notify=vim.notify
 local notifications={}
-vim.notify=function(message) notifications[#notifications+1]=message end
+vim.notify=function(message,level) notifications[#notifications+1]={message=message,level=level} end
+calls.view.controller.watch:warning()
+assert(vim.wait(1000,function() return #notifications>0 end))
+assert(notifications[1].message=='native tree watches exhausted; use R to refresh unwatched directories'
+  and notifications[1].level==vim.log.levels.WARN, 'native watch exhaustion reaches user')
+notifications={}
 vim.o.hidden=false
 local modified_buf=vim.api.nvim_get_current_buf()
 local original_disk=table.concat(vim.fn.readfile(root..'/one.lua'),'\n')
@@ -115,9 +120,14 @@ calls.view.controller:action('open')
 assert(vim.api.nvim_get_current_buf()==modified_buf and vim.bo[modified_buf].modified)
 assert(vim.api.nvim_buf_get_lines(modified_buf,0,1,false)[1]=='unsaved native edit')
 assert(table.concat(vim.fn.readfile(root..'/one.lua'),'\n')==original_disk)
-assert(notifications[#notifications]=='Save changes before opening another file', 'refusal notification stays concise: '..vim.inspect(notifications))
+assert(notifications[#notifications].message=='Save changes before opening another file', 'refusal notification stays concise: '..vim.inspect(notifications))
 assert(#calls==calls_before_refusal and calls.view.focused, 'refusal keeps native focus and sends no editor focus request')
 assert(calls.view.controller.suppressed==nil, 'refusal clears the open suppression')
+vim.o.hidden=true
+calls.view.controller:action('open')
+assert(vim.api.nvim_buf_get_name(0)==root..'/two.lua', 'hidden option permits opening another file')
+assert(vim.bo[modified_buf].modified and vim.api.nvim_buf_get_lines(modified_buf,0,1,false)[1]=='unsaved native edit')
+assert(table.concat(vim.fn.readfile(root..'/one.lua'),'\n')==original_disk)
 vim.notify=original_notify
 vim.api.nvim_buf_set_option(modified_buf,'modified',false)
 stop()

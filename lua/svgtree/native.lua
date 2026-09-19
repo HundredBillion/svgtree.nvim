@@ -71,7 +71,7 @@ function M.open(root,saved,callbacks)
       vim.notify('No normal editing window is available',vim.log.levels.ERROR)
       self.controller.suppressed=nil; return false
     end
-    if vim.bo[vim.api.nvim_win_get_buf(self.target)].modified then
+    if not vim.o.hidden and vim.bo[vim.api.nvim_win_get_buf(self.target)].modified then
       vim.notify('Save changes before opening another file',vim.log.levels.WARN)
       self.controller.suppressed=nil; return false
     end
@@ -258,6 +258,7 @@ function M.open(root,saved,callbacks)
     self.projected_rows=nil;self.projected_collapsed=nil
     self.controller=Controller.new({root=root,snapshot=self.snapshot_value,side=side,keys=native_options.mappings,compact=native_options.compact_folders,
       is_active=active,on_change=change,on_open=function(path) open_file(path,not self.click_open) end,
+      warn=function(message) vim.notify(message,vim.log.levels.WARN) end,
       on_close=function() self:close() end,
       on_editor_focus=function() if self.handle then self.handle:focus_editor(function(e) if current(g) and e then failure(e) end end) end end})
     sprite.open({side=side,width=self.snapshot_value.widths.native or 280,
