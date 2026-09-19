@@ -115,6 +115,20 @@ function M.root()
   return active.root
 end
 
+---Focus the native Explorer when it is open on `side`.
+---Returns false when the Explorer is not a native view on that side, so callers
+---can fall back to ordinary Neovim split navigation.
+---@param side? 'left'|'right'
+---@return boolean
+function M.focus(side)
+  if not active or active.kind ~= 'native' or not active.view then return false end
+  local native_side = (config.options.native and config.options.native.side)
+    or (config.options.window and config.options.window.side) or 'left'
+  if side and side ~= native_side then return false end
+  active.view:focus()
+  return true
+end
+
 function M.toggle(root)
   if M.root() then M.close() else M.open(root) end
 end

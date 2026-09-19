@@ -79,8 +79,12 @@ tree.open(second)
 local navigation_available=availability[#availability]
 navigation_available.callback(nil,{features=features})
 local navigation=pending[#pending]
-local navigation_view={snapshot=function() return snapshot end,close=function() calls[#calls+1]='native-close' end}
+local native_focuses=0
+local navigation_view={snapshot=function() return snapshot end,close=function() calls[#calls+1]='native-close' end,
+  focus=function() native_focuses=native_focuses+1 end}
 navigation.callbacks.ready(navigation_view)
+assert(tree.focus('left') and native_focuses==1, 'focus enters the native left sidebar')
+assert(not tree.focus('right') and native_focuses==1, 'opposite direction falls through to normal window navigation')
 navigation.callbacks.root(first)
 assert(tree.root()==first and calls[#calls]=='native-close', 'native root navigation replaces the active tree')
 local focused_available=availability[#availability]

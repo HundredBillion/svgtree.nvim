@@ -56,6 +56,21 @@ example:
 require('svgtree').setup({ native = { mappings = { ['<Space>'] = 'enter', j = false } } })
 ```
 
+Because a native sidebar is not a Neovim split, make your editor-side window
+mappings call `focus(side)` before falling back to `:wincmd`. This keeps direct
+`<C-h>`/`<C-l>` navigation working in both directions:
+
+```lua
+local tree = require('svgtree')
+local function focus(side, wincmd)
+  return function()
+    if not tree.focus(side) then vim.cmd('wincmd ' .. wincmd) end
+  end
+end
+vim.keymap.set('n', '<C-h>', focus('left', 'h'))
+vim.keymap.set('n', '<C-l>', focus('right', 'l'))
+```
+
 To use `<leader>e` to open and close the tree with Space as your leader, bind
 it in both places. The native sidebar owns keyboard focus while it is open,
 so a Neovim mapping alone cannot receive the second press:
