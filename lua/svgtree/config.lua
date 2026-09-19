@@ -19,7 +19,7 @@ local defaults = {
     side = 'left', -- 'left' | 'right'
   },
   indent = 2, -- spaces per depth level
-  show_hidden = false, -- show dotfiles
+  show_hidden = true, -- show dotfiles
   -- Pre-rasterize the entire pack on setup. Leave false for large packs.
   warm = false,
   -- Fall back to plain text labels when the terminal can't display images.
