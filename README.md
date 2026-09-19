@@ -45,8 +45,10 @@ Native keys: `j`/`k` or arrows move; `h`/`l` collapse and enter; `gg`/`G`
 move to the ends; `<C-d>`/`<C-u>` scroll; `/` searches filenames literally;
 `n`/`N` move between matches; `.` focuses the selected directory (or a file's
 directory); `<BS>` moves the root to its parent; `R` refreshes; `q` or `<Esc>`
-closes. `<CR>` opens a file and focuses the editor. A single click opens a file
-while keeping tree focus; a double click focuses the editor. Set
+closes. `<CR>` opens a file and focuses the editor. `<C-w>l` and `<C-w><C-l>`
+also focus the editor for a left sidebar (`h`/`<C-h>` for a right sidebar). A
+single click opens a file while keeping tree focus; a double click focuses the
+editor. Set
 `native.mappings` to map a key to an action or `false` to remove it, for
 example:
 
