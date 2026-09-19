@@ -147,7 +147,9 @@ function Tree:refresh(callback, dirty_dirs)
   if self.closed then return end
   self.generation = self.generation + 1
   local generation = self.generation
-  local queue, queued, active, completed = {}, {}, 0, false
+  local queue, inspect_queue, queued = {}, {}, {}
+  local queue_head, inspect_head = 1, 1
+  local active, completed, pumping = 0, false, false
   local full = dirty_dirs == nil
   local dirty = {}
   for key, value in pairs(dirty_dirs or {}) do
@@ -155,7 +157,6 @@ function Tree:refresh(callback, dirty_dirs)
     elseif value then dirty[M.normalize(key)] = true end
   end
   local function valid() return not self.closed and self.generation == generation end
-  local pump
   local function enqueue(path, ancestors)
     if queued[path] then return end
     queued[path] = true
@@ -163,35 +164,43 @@ function Tree:refresh(callback, dirty_dirs)
     self.cache[path] = {status = 'loading', entries = self.cache[path] and self.cache[path].entries or nil,
       realpath = self.cache[path] and self.cache[path].realpath or nil}
   end
-  local function visible(path, ancestors)
+  local function inspect(task)
+    local path, ancestors = task.path, task.ancestors
     local record = self.cache[path]
     if not record or record.status ~= 'loaded' then return end
     local own = vim.deepcopy(ancestors)
     own[path == self.root and self.root_realpath or record.realpath or path] = true
     local sole = #record.entries == 1 and record.entries[1].kind == 'dir' and record.entries[1] or nil
     for _, entry in ipairs(record.entries) do
-      if entry.kind == 'dir' then
-        local child = join(path, entry.name)
-        if not (entry.realpath and own[entry.realpath]) then
-          if self.expanded[child] or self.expanded[path] or entry == sole or path == self.root then
-            if self.cache[child] then self.cache[child].realpath = entry.realpath end
-            local child_record = self.cache[child]
-            if full or dirty[child] or not child_record or child_record.status == 'unknown' then
-              enqueue(child, own)
-              self.cache[child].realpath = entry.realpath
-            else
-              visible(child, own)
-            end
+      if entry.kind == 'dir' and not (entry.realpath and own[entry.realpath]) then
+        -- Only children of displayed expanded directories and sole-folder chains are displayed.
+        if path == self.root or self.expanded[path] or entry == sole then
+          local child = join(path, entry.name)
+          local child_record = self.cache[child]
+          if full or dirty[child] or not child_record or child_record.status == 'unknown' then
+            enqueue(child, own)
+            self.cache[child].realpath = entry.realpath
+          else
+            child_record.realpath = entry.realpath
+            inspect_queue[#inspect_queue + 1] = {path = child, ancestors = own}
           end
         end
       end
     end
   end
   enqueue(self.root, {})
+  local pump
   pump = function()
-    if not valid() then return end
-    while self.inflight < 8 and #queue > 0 do
-      local task = table.remove(queue, 1)
+    if pumping or not valid() then return end
+    pumping = true
+    while valid() do
+      while inspect_head <= #inspect_queue do
+        inspect(inspect_queue[inspect_head])
+        inspect_head = inspect_head + 1
+      end
+      if self.inflight >= 8 or queue_head > #queue then break end
+      local task = queue[queue_head]
+      queue_head = queue_head + 1
       active = active + 1
       self.inflight = self.inflight + 1
       self.scan(task.path, function(err, entries)
@@ -204,11 +213,15 @@ function Tree:refresh(callback, dirty_dirs)
         self.cache[task.path] = {status = err and 'error' or 'loaded', error = err,
           entries = sorted(entries, self.show_hidden),
           realpath = task.path == self.root and self.root_realpath or self.cache[task.path].realpath}
-        if not err then visible(task.path, task.ancestors) end
+        if not err then inspect_queue[#inspect_queue + 1] = task end
         pump()
       end)
     end
-    if active == 0 and #queue == 0 and not completed then completed = true; callback(nil, self) end
+    pumping = false
+    if valid() and active == 0 and queue_head > #queue and inspect_head > #inspect_queue and not completed then
+      completed = true
+      callback(nil, self)
+    end
   end
   self.pump_current = pump
   pump()

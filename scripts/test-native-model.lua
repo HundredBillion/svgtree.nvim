@@ -173,6 +173,74 @@ assert(old_active == 8, 'new generation takes released slot')
 old_pending[10](nil, {})
 overlap:close()
 
+local deep_calls = {}
+local deep_fixture = {
+  [root] = {{name = 'A', kind = 'dir'}},
+  [root .. '/A'] = {{name = 'B', kind = 'dir'}, {name = 'side.txt', kind = 'file'}},
+  [root .. '/A/B'] = {{name = 'C', kind = 'dir'}},
+  [root .. '/A/B/C'] = {{name = 'D', kind = 'dir'}},
+  [root .. '/A/B/C/D'] = {},
+}
+local deep_tree = Tree.new(root, {async = true, scan = function(path, done)
+  deep_calls[#deep_calls + 1] = path
+  done(nil, deep_fixture[path] or {})
+end})
+deep_tree:toggle(root .. '/A')
+deep_tree:toggle(root .. '/A/B')
+deep_tree:toggle(root .. '/A/B/C')
+deep_tree:refresh()
+deep_tree:toggle(root .. '/A')
+deep_calls = {}
+deep_tree:refresh()
+assert(table.concat(deep_calls, ',') == root .. ',' .. root .. '/A',
+  'full refresh stops beneath collapsed ancestor despite retained expansion flags')
+deep_calls = {}
+deep_tree:refresh(nil, {root .. '/A/B/C'})
+assert(table.concat(deep_calls, ',') == root,
+  'dirty hidden descendant stays unscanned beneath collapsed ancestor')
+
+local wide_calls = {}
+local wide_fixture = {[root] = {{name = 'src', kind = 'dir'}}}
+local wide_children = {}
+for index = 1, 30 do
+  local name = ('group%02d'):format(index)
+  wide_children[#wide_children + 1] = {name = name, kind = 'dir'}
+  wide_fixture[root .. '/src/' .. name] = {{name = 'hidden', kind = 'dir'}, {name = 'file.txt', kind = 'file'}}
+  wide_fixture[root .. '/src/' .. name .. '/hidden'] = {}
+end
+wide_fixture[root .. '/src'] = wide_children
+local wide_tree = Tree.new(root, {async = true, scan = function(path, done)
+  wide_calls[#wide_calls + 1] = path
+  done(nil, wide_fixture[path] or {})
+end})
+wide_tree:toggle(root .. '/src')
+wide_tree:refresh()
+assert(#wide_calls == 32, 'scan root, displayed src, and each displayed child for compact discovery')
+for _, path in ipairs(wide_calls) do assert(not path:find('/hidden$', 1, false)) end
+
+local long_calls = 0
+local long_tree = Tree.new(root, {async = true, scan = function(path, done)
+  long_calls = long_calls + 1
+  local _, depth = path:sub(#root + 1):gsub('/d', '')
+  done(nil, depth < 1200 and {{name = 'd', kind = 'dir'}} or {{name = 'end.txt', kind = 'file'}})
+end})
+long_tree:refresh()
+assert(long_calls == 1201, 'deep compact discovery completes without Lua stack growth')
+long_calls = 0
+long_tree:refresh(nil, {root})
+assert(long_calls == 1, 'dirty refresh traverses deep cached chain iteratively')
+
+local old_first = Tree.new(root, {async = true, scan = scan})
+old_first:refresh(function() error('older-first stale callback published') end)
+local first_callback = pending[root]
+local latest_done = false
+old_first:refresh(function() latest_done = true end)
+local latest_callback = pending[root]
+first_callback(nil, {{name = 'old', kind = 'file'}})
+assert(not latest_done and #old_first:flatten() == 0)
+latest_callback(nil, {{name = 'latest', kind = 'file'}})
+assert(latest_done and old_first:flatten()[1].name == 'latest')
+
 local real = Tree.new(root, {async = true})
 local real_done = false
 real:refresh(function() real_done = true end)
