@@ -13,16 +13,38 @@ local function bindings(side)
 end
 local allowed = {}
 for _, action in pairs(bindings()) do allowed[action] = true end
-local aliases = {['<Space>']=' ', ['<Enter>']='<CR>', ['<Escape>']='<Esc>', ['<Backspace>']='<BS>'}
+local aliases = {['<Space>']=' ', ['<Enter>']='<CR>', ['<Escape>']='<Esc>', ['<Backspace>']='<BS>', ['<lt>']='<'}
 local function normalize_binding(key)
   assert(not key:find('%c'), 'native keymap cannot contain control characters')
   assert(not key:find('<[^>]*$'), 'malformed native key notation: ' .. key)
   for token in key:gmatch('<[^>]+>') do
-    assert(vim.api.nvim_replace_termcodes(token,true,false,true) ~= token,
+    assert(aliases[token] or vim.api.nvim_replace_termcodes(token,true,false,true) ~= token,
       'unknown native key notation: ' .. token)
   end
   for alias, canonical in pairs(aliases) do key=key:gsub(alias:gsub('([^%w])','%%%1'),canonical) end
   return key
+end
+local function tokens(sequence)
+  local out, i = {}, 1
+  while i <= #sequence do
+    local tail=sequence:sub(i)
+    local named=tail:match('^<[^>]+>')
+    local token=named or vim.fn.strcharpart(tail,0,1)
+    out[#out+1]=token; i=i+#token
+  end
+  return out
+end
+local function is_prefix(prefix, sequence)
+  local a,b=tokens(prefix),tokens(sequence)
+  if #a>=#b then return false end
+  for i=1,#a do if a[i]~=b[i] then return false end end
+  return true
+end
+local function has_prefix(map, prefix)
+  for sequence, action in pairs(map) do
+    if action and is_prefix(prefix,sequence) then return true end
+  end
+  return false
 end
 function M.defaults(side) return vim.deepcopy(bindings(side)) end
 function M.validate(overrides)
@@ -48,7 +70,7 @@ function M.new(overrides, timeout_ms, side)
   for key, action in pairs(map) do
     if action then
       for other, other_action in pairs(map) do
-        assert(not (other_action and key ~= other and other:sub(1,#key)==key),
+        assert(not (other_action and key ~= other and is_prefix(key,other)),
           'ambiguous native keymap prefix: ' .. key)
       end
     end
@@ -63,12 +85,6 @@ local function token(event)
   local value = call.args[1]
   if value == '<lt>' then return '<' end
   return value
-end
-local function has_prefix(map, prefix)
-  for sequence, action in pairs(map) do
-    if action and #sequence > #prefix and sequence:sub(1,#prefix)==prefix then return true end
-  end
-  return false
 end
 function Keys:feed(event, now_ms)
   if event.type == 'blur' then self:reset(); return nil end

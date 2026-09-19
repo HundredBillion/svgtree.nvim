@@ -125,7 +125,7 @@ function Controller:select(index)
   if #self.rows == 0 then return end
   index = math.max(1, math.min(#self.rows, index))
   self.snapshot.selected = self.rows[index].id
-  self:publish()
+  self:publish(self.snapshot.selected)
 end
 
 function Controller:move_match(direction)
@@ -145,31 +145,48 @@ function Controller:move_match(direction)
 end
 
 function Controller:search_event(event)
-  local key = event.key and require('sprite.input').key(event.key)
-  if event.type=='input' and key=='<Esc>' then
+  local call = require('sprite.input').call(event)
+  local key, value
+  if event.type=='paste' then
+    value=event.text
+  elseif event.type=='input' and call and call.method=='nvim_input' then
+    key=call.args[1]
+    if event.text ~= nil and not event.text:find('%c') then
+      value=event.text
+    elseif key=='<lt>' then value='<'
+    elseif key=='<Space>' then value=' '
+    elseif vim.fn.strchars(key)==1 then value=key end
+  end
+  if not value and key=='<Esc>' then
     self.search.active=false; self.search.query=self.search.last
     self.snapshot.selected=self.search.initial_selected
     self.snapshot.scroll=self.search.initial_scroll
     self.keys:reset(); self:publish(); return 'search_cancel'
   end
-  if event.type=='input' and key=='<CR>' then
+  if not value and key=='<CR>' then
     if self.search.query ~= '' then self.search.last=self.search.query else self.search.query=self.search.last end
     self.search.active=false; self.keys:reset(); self:publish(); return 'search_accept'
   end
-  if event.type=='input' and key=='<BS>' then
+  if not value and key=='<BS>' then
     local count=vim.fn.strchars(self.search.query)
     self.search.query=vim.fn.strcharpart(self.search.query,0,math.max(0,count-1))
-  else
-    local value
-    if event.type=='paste' then value=event.text
-    elseif event.type=='input' then
-      local call=require('sprite.input').call(event)
-      if call and call.method=='nvim_input' and event.text and not event.text:find('%c') then value=event.text end
-    end
-    if not value then return nil end
+  elseif value then
     self.search.query=self.search.query .. value:gsub('[\r\n]+',' ')
+  else return nil end
+  self:update_search()
+  local matches=self.search.matches
+  local reveal
+  if #matches>0 then
+    local current=row_index(self.rows,self.snapshot.selected) or 0
+    if not vim.tbl_contains(matches,self.snapshot.selected) then
+      for _, id in ipairs(matches) do
+        if (row_index(self.rows,id) or 0)>current then reveal=id; break end
+      end
+      reveal=reveal or matches[1]
+      self.snapshot.selected=reveal
+    else reveal=self.snapshot.selected end
   end
-  self:update_search(); self:publish(); return 'search_edit'
+  self:publish(reveal); return 'search_edit'
 end
 
 function Controller:action(action)
@@ -207,7 +224,7 @@ function Controller:action(action)
       local parent=vim.fs.dirname(row.path)
       while parent and Tree.contains(self.root,parent) and parent~=self.root do
         local found=State.reconcile(self.rows,parent)
-        if found and found~=row.id then self.snapshot.selected=found; self:publish(); break end
+        if found and found~=row.id then self.snapshot.selected=found; self:publish(found); break end
         parent=vim.fs.dirname(parent)
       end
     end
