@@ -52,8 +52,22 @@ function Controller:refresh(dirty)
   local generation = self.generation
   self.tree:refresh(function(err)
     if self.closed or generation ~= self.generation then return end
-    if not err then self:publish() end
+    if not err then
+      self:publish()
+      if self.pending_reveal then self:reveal_pending(self.pending_reveal) end
+    end
   end, dirty)
+end
+
+function Controller:reveal_pending(path)
+  local generation = self.generation
+  self.tree:reveal(path, function(id)
+    if self.closed or generation ~= self.generation or self.pending_reveal ~= path then return end
+    self.pending_reveal = nil
+    if not id then return end
+    self.snapshot.selected = path
+    self:publish(id)
+  end)
 end
 
 function Controller:suppress_open(path)
@@ -68,11 +82,13 @@ function Controller:on_buf_enter(buf)
   if path == self.suppressed then
     self.suppressed = nil
     self.active = path
+    self.pending_reveal = nil
     return
   end
   self.suppressed = nil
   if path == self.active then return end
   self.active = path
+  self.pending_reveal = nil
   if path == self.root or not Tree.contains(self.root, path) then return end
   local stat = vim.uv.fs_stat(path)
   if not stat or stat.type ~= 'file' then return end
@@ -81,17 +97,14 @@ function Controller:on_buf_enter(buf)
     for part in relative:gmatch('[^/]+') do if part:sub(1, 1) == '.' then return end end
   end
   self.generation = self.generation + 1
-  local generation = self.generation
-  self.tree:reveal(path, function(id)
-    if self.closed or generation ~= self.generation or not id then return end
-    self.snapshot.selected = path
-    self:publish(id)
-  end)
+  self.pending_reveal = path
+  self:reveal_pending(path)
 end
 
 function Controller:close()
   if self.closed then return end
   self.closed = true
+  self.pending_reveal = nil
   self.generation = self.generation + 1
   if self.group then vim.api.nvim_del_augroup_by_id(self.group) end
   self.watch:close()

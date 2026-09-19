@@ -133,3 +133,55 @@ assert(vim.wait(3000, function() return seen > 0 end, 10), 'real fs_event delive
 real:close()
 vim.fn.delete(real_root, 'rf')
 print('real fs_event ok')
+
+local race_root = vim.fn.tempname()
+vim.fn.mkdir(race_root .. '/dir', 'p')
+vim.fn.writefile({'a'}, race_root .. '/dir/a')
+vim.fn.writefile({'b'}, race_root .. '/dir/b')
+local queued, race_changes = {}, {}
+local function race_scan(path, done)
+  queued[#queued + 1] = {path=path, done=done}
+end
+local function drain()
+  local count = 0
+  while #queued > 0 do
+    count = count + 1; assert(count < 30, 'scan loop')
+    local item = table.remove(queued, 1)
+    if item.path == race_root then item.done(nil, {{name='dir',kind='dir'}})
+    else item.done(nil, {{name='a',kind='file'}, {name='b',kind='file'}}) end
+  end
+end
+local race_tree = Tree.new(race_root, {async=true, scan=race_scan})
+local race = Controller.new({root=race_root, tree=race_tree, autocmd=false,
+  watch={set=function() end,close=function() end},
+  on_change=function(_, snapshot) race_changes[#race_changes+1]=snapshot.selected end})
+race:refresh(); drain()
+local abuf = vim.fn.bufadd(race_root .. '/dir/a')
+local bbuf = vim.fn.bufadd(race_root .. '/dir/b')
+race:on_buf_enter(abuf)
+race:refresh({race_root})
+drain()
+assert(race_changes[#race_changes] == race_root .. '/dir/a', 'watch refresh preserves in-flight reveal')
+assert(#queued == 0)
+race:on_buf_enter(bbuf)
+race:refresh({race_root})
+race:on_buf_enter(abuf)
+drain()
+assert(race_changes[#race_changes] == race_root .. '/dir/a', 'newer file wins over stale reveal')
+race:on_buf_enter(bbuf)
+race:refresh({race_root})
+local outside_file = vim.fn.tempname()
+vim.fn.writefile({'outside'}, outside_file)
+local outside_buf = vim.fn.bufadd(outside_file)
+local before_outside = #race_changes
+race:on_buf_enter(outside_buf); drain()
+assert(race_changes[#race_changes] == race_root .. '/dir/a', 'outside file cancels pending reveal without changing selection')
+assert(#race_changes >= before_outside, 'structural refresh may still publish')
+race:on_buf_enter(bbuf)
+race:refresh({race_root})
+local before_close = #race_changes
+race:close(); drain()
+assert(#race_changes == before_close, 'close prevents late reveal')
+vim.fn.delete(race_root, 'rf')
+vim.fn.delete(outside_file)
+print('controlled reveal race ok')
