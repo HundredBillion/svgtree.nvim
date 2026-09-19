@@ -9,6 +9,79 @@ keeps the bundled starter icons unless you choose a pack.
 
 ## Native Explorer in Sprite
 
+The VS Code-like Explorer is available when Neovim runs inside
+[Sprite](https://github.com/HundredBillion/sprite.nvim). Sprite supplies the
+native, resizable sidebar; svgtree supplies the VS Code-style layout, system
+font, spacing, Material icons, tree state, and navigation. In Ghostty or any
+other terminal, the same configuration automatically uses svgtree's terminal
+renderer instead.
+
+![VS Code-like svgtree native Explorer](tests/visual/reference/expanded-src.png)
+
+### LazyVim setup
+
+Install [Sprite](https://github.com/HundredBillion/sprite.nvim), then add this
+file to your LazyVim configuration. It makes svgtree the only file explorer:
+it disables Snacks Explorer's automatic directory view, opens svgtree with
+`<leader>e`, and keeps focus navigation working between the editor and
+Sprite's native sidebar. With LazyVim's default leader, `<leader>` is Space.
+
+```lua
+-- ~/.config/nvim/lua/plugins/svgtree.lua
+return {
+  -- Keep Snacks' other features, but do not use its Explorer.
+  {
+    "folke/snacks.nvim",
+    opts = { explorer = { enabled = false } },
+    keys = {
+      { "<leader>e", false },
+      { "<leader>E", false },
+    },
+  },
+  {
+    "HundredBillion/svgtree.nvim",
+    dependencies = { "HundredBillion/sprite.nvim" },
+    opts = function()
+      local in_sprite = vim.env.SPRITE_SURFACE_SOCKET ~= nil
+      return {
+        renderer = in_sprite and "sprite" or "terminal",
+        pack = in_sprite and nil or "material",
+        -- Lets Space, then e close the focused native sidebar.
+        native = { mappings = { ["<Space>e"] = "close" } },
+      }
+    end,
+    keys = {
+      {
+        "<leader>e",
+        function() require("svgtree").toggle(LazyVim.root()) end,
+        desc = "SVGTree Explorer",
+      },
+      {
+        "<C-h>",
+        function()
+          local tree = require("svgtree")
+          if not tree.focus("left") then vim.cmd("wincmd h") end
+        end,
+        desc = "Focus left window or SVGTree",
+      },
+      {
+        "<C-l>",
+        function()
+          local tree = require("svgtree")
+          if not tree.focus("right") then vim.cmd("wincmd l") end
+        end,
+        desc = "Focus right window or SVGTree",
+      },
+    },
+  },
+}
+```
+
+For the default left sidebar, press `<C-l>` to move from Sprite's Explorer to
+the editor and `<C-h>` to return. `<leader>e` opens or closes svgtree from an
+editor buffer; Space followed by `e` closes it while the native sidebar has
+focus. No Shift is required for Ctrl-H or Ctrl-L.
+
 Install `svgtree.nvim` and put the optional `sprite.nvim` plugin API on
 Neovim's runtime path for native Sprite support. Ordinary Neovim needs only
 `svgtree.nvim`. Call `require('svgtree').setup({})` and open it with
