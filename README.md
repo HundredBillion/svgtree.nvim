@@ -18,8 +18,6 @@ font, spacing, Material icons, tree state, and navigation. In Ghostty or any
 other terminal, the same configuration automatically uses svgtree's terminal
 renderer instead.
 
-![VS Code-like svgtree native Explorer](tests/visual/reference/expanded-src.png)
-
 
 
 ### LazyVim setup
