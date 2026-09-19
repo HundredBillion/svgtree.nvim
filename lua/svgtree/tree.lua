@@ -230,10 +230,10 @@ end
 function Tree:reveal(path, callback)
   callback = callback or function() end
   path = M.normalize(path)
-  if not M.contains(self.root, path) or path == self.root then return callback(false) end
+  if not M.contains(self.root, path) or path == self.root then return callback(nil) end
   local relative = path:sub(#self.root + (self.root == '/' and 1 or 2))
   for part in relative:gmatch('[^/]+') do
-    if not self.show_hidden and part:sub(1, 1) == '.' then return callback(false) end
+    if not self.show_hidden and part:sub(1, 1) == '.' then return callback(nil) end
   end
   local parent = vim.fs.dirname(path)
   while parent and M.contains(self.root, parent) and parent ~= self.root do
@@ -241,8 +241,14 @@ function Tree:reveal(path, callback)
     parent = vim.fs.dirname(parent)
   end
   self:refresh(function()
-    local found = false
-    for _, node in ipairs(self:flatten()) do if node.path == path then found = true; break end end
+    local found
+    for _, row in ipairs(require('svgtree.state').rows(self, true)) do
+      if row.id == path then found = row.id; break end
+      for _, member in ipairs(row.chain) do
+        if member == path then found = row.id; break end
+      end
+      if found then break end
+    end
     callback(found)
   end)
 end

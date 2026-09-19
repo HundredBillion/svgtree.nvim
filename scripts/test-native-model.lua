@@ -60,7 +60,7 @@ pending[root .. '/parent/child/deep'](nil, {{name = 'leaf.txt', kind = 'file'}})
 assert(names(State.rows(hidden, true)) == 'parent/child/deep')
 local revealed
 hidden:reveal(root .. '/.secret', function(ok) revealed = ok end)
-assert(revealed == false)
+assert(revealed == nil)
 
 local closed = Tree.new(root, {async = true, scan = scan})
 closed:refresh(function() error('closed generation published') end)
