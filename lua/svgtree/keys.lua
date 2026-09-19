@@ -8,7 +8,8 @@ local function bindings(side)
     ['<Left>']='parent', ['<Right>']='enter', ['<Home>']='first', ['<End>']='last',
     ['<C-d>']='half_down', ['<C-u>']='half_up', gg='first', G='last',
     ['<CR>']='open', R='refresh', q='close', ['<Esc>']='close', ['/']='search',
-    n='search_next', N='search_previous', [side == 'right' and '<C-w>h' or '<C-w>l']='focus_editor',
+    n='search_next', N='search_previous', ['.']='focus_root', ['<BS>']='parent_root',
+    [side == 'right' and '<C-w>h' or '<C-w>l']='focus_editor',
   }
 end
 local allowed = {}

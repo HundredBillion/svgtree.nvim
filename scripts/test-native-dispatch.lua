@@ -75,6 +75,19 @@ local before=#calls
 current.callbacks.failed({code='unavailable',message='again'})
 assert(#calls==before,'failure must only fall back once')
 tree.close()
+tree.open(second)
+local navigation_available=availability[#availability]
+navigation_available.callback(nil,{features=features})
+local navigation=pending[#pending]
+local navigation_view={snapshot=function() return snapshot end,close=function() calls[#calls+1]='native-close' end}
+navigation.callbacks.ready(navigation_view)
+navigation.callbacks.root(first)
+assert(tree.root()==first and calls[#calls]=='native-close', 'native root navigation replaces the active tree')
+local focused_available=availability[#availability]
+assert(focused_available~=navigation_available, 'native root navigation starts a new availability check')
+focused_available.callback(nil,{features=features})
+assert(pending[#pending].path==first, 'native root navigation opens the requested root')
+tree.close()
 package.loaded.sprite=nil
 package.preload.sprite=function() error('module missing') end
 tree.open(first)

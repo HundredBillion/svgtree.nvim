@@ -43,14 +43,33 @@ and separate native/terminal widths for a root during the Neovim session.
 
 Native keys: `j`/`k` or arrows move; `h`/`l` collapse and enter; `gg`/`G`
 move to the ends; `<C-d>`/`<C-u>` scroll; `/` searches filenames literally;
-`n`/`N` move between matches; `R` refreshes; `q` or `<Esc>` closes. `<CR>`
-opens a file and focuses the editor. A single click opens a file while keeping
-tree focus; a double click focuses the editor. Set `native.mappings` to map a
-key to an action or `false` to remove it, for example:
+`n`/`N` move between matches; `.` focuses the selected directory (or a file's
+directory); `<BS>` moves the root to its parent; `R` refreshes; `q` or `<Esc>`
+closes. `<CR>` opens a file and focuses the editor. A single click opens a file
+while keeping tree focus; a double click focuses the editor. Set
+`native.mappings` to map a key to an action or `false` to remove it, for
+example:
 
 ```lua
 require('svgtree').setup({ native = { mappings = { ['<Space>'] = 'enter', j = false } } })
 ```
+
+To use `<leader>e` to open and close the tree with Space as your leader, bind
+it in both places. The native sidebar owns keyboard focus while it is open,
+so a Neovim mapping alone cannot receive the second press:
+
+```lua
+-- Set vim.g.mapleader = ' ' before loading plugins.
+local tree = require('svgtree')
+tree.setup({ native = { mappings = { ['<Space>e'] = 'close' } } })
+vim.keymap.set('n', '<leader>e', function()
+  tree.toggle(vim.uv.cwd())
+end, { desc = 'Toggle SVGTree Explorer' })
+```
+
+The Neovim mapping opens or closes the terminal tree and opens the native tree;
+the native mapping closes the focused native tree. Use the corresponding key
+sequence in `native.mappings` if your leader is different.
 
 See [visual acceptance](tests/visual/acceptance.md) for reference captures and
 the current platform and manual verification status.

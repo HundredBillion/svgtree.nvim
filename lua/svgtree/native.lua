@@ -260,6 +260,7 @@ function M.open(root,saved,callbacks)
       is_active=active,on_change=change,on_open=function(path) open_file(path,not self.click_open) end,
       warn=function(message) vim.notify(message,vim.log.levels.WARN) end,
       on_close=function() self:close() end,
+      on_root=function(path) if callbacks.root then callbacks.root(path) end end,
       on_editor_focus=function() if self.handle then self.handle:focus_editor(function(e) if current(g) and e then failure(e) end end) end end})
     sprite.open({side=side,width=self.snapshot_value.widths.native or 280,
       description=View.description(nil,root,self.snapshot_value.root_collapsed,side),

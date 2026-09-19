@@ -88,6 +88,9 @@ function M.open(root)
         if token ~= generation then view:close(); return end
         active = {kind = 'native', root = root, view = view, cancel = function() view:close() end}
       end,
+      root = function(path)
+        if token == generation then M.open(path) end
+      end,
       failed = function(failure)
         if token == generation then
           if active and active.view then State.save(root, active.view:snapshot()) end

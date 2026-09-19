@@ -13,12 +13,13 @@ vim.fn.mkdir(root .. '/dir/sub', 'p')
 vim.fn.writefile({'x'}, root .. '/alpha.txt')
 vim.fn.writefile({'x'}, root .. '/dir/sub/Bravo.txt')
 vim.fn.writefile({'x'}, root .. '/dir/sub/.hidden')
-local changes, opens, focuses = {}, {}, 0
+local changes, opens, focuses, roots = {}, {}, 0, {}
 local active = true
 local c = Controller.new({root=root, tree=Tree.new(root,{async=false,show_hidden=false}), autocmd=false,
   watch={set=function() watch_sets=watch_sets+1 end,close=function() end},
   on_change=function(rows,snapshot,reveal) changes[#changes+1]={rows=rows,snapshot=snapshot,reveal=reveal} end,
   on_open=function(path) opens[#opens+1]=path end, on_editor_focus=function() focuses=focuses+1 end,
+  on_root=function(path) roots[#roots+1]=path end,
   is_active=function() return active end})
 local function key(k,t,now) return c:handle({type='input',key=k,text=t},now or 0) end
 c:refresh()
@@ -44,6 +45,10 @@ assert(c.snapshot.expanded[root..'/dir/sub'])
 assert(#c.rows==3 and c.rows[2].id==root..'/dir/sub/Bravo.txt')
 key('j','j'); key('h','h'); assert(c.snapshot.selected==root..'/dir/sub')
 assert(changes[#changes].reveal==root..'/dir/sub', 'parent requests reveal')
+key('.','.'); assert(roots[#roots]==root..'/dir/sub', 'dot focuses the selected directory')
+c.snapshot.selected=root..'/alpha.txt'; key('.','.'); assert(roots[#roots]==root, 'dot focuses a selected file parent')
+key('backspace',nil); assert(roots[#roots]==vim.fs.dirname(root), 'backspace moves the root upward')
+c.snapshot.selected=root..'/dir/sub'
 key('h','h'); assert(not c.tree:is_expanded(root..'/dir/sub'))
 key('ctrl-w',nil); key('l','l'); assert(focuses==1)
 key('slash','/'); assert(c.search.active and c.snapshot.search.query=='')
