@@ -74,6 +74,12 @@ key('slash','/'); key('enter','\n'); assert(c.snapshot.search.query=='Br')
 key('slash','/'); c:handle({type='paste',text='é漢'},2); key('backspace',nil)
 assert(c.snapshot.search.query=='é'); key('escape',nil)
 c:refresh(); assert(c.snapshot.search.query=='Br' and c.snapshot.search.count==1)
+local collapsed_selected=c.snapshot.selected
+local collapsed_opens=#opens
+c.snapshot.root_collapsed=true
+c:action('last'); c:action('enter'); c:action('parent')
+assert(c.snapshot.selected==collapsed_selected and #opens==collapsed_opens, 'collapsed root ignores invisible row actions')
+c.snapshot.root_collapsed=false
 key('slash','/'); key('b','B'); key('r','r')
 assert(c.snapshot.selected==root..'/dir/sub/Bravo.txt' and changes[#changes].reveal==root..'/dir/sub/Bravo.txt', 'typing selects and reveals match')
 key('z','z'); assert(c.snapshot.search.count==0 and c.snapshot.selected==root..'/dir/sub/Bravo.txt', 'no matches keep selection')

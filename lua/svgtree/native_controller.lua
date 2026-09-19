@@ -193,6 +193,7 @@ function Controller:search_event(event)
 end
 
 function Controller:action(action)
+  if self.snapshot.root_collapsed and action ~= 'refresh' and action ~= 'close' and action ~= 'focus_editor' then return end
   local index = row_index(self.rows,self.snapshot.selected) or 1
   local row = self.rows[index]
   if action=='next' then self:select(index+1)

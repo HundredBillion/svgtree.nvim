@@ -173,6 +173,23 @@ assert(old_active == 8, 'new generation takes released slot')
 old_pending[10](nil, {})
 overlap:close()
 
+local delayed = {}
+local overlap_dirty = Tree.new(root, {async = true, scan = function(path, done)
+  delayed[#delayed + 1] = {path = path, done = done}
+end})
+overlap_dirty:refresh(function() error('stale full refresh published') end)
+delayed[1].done(nil, {{name = 'parent', kind = 'dir'}})
+assert(delayed[2].path == root .. '/parent' and overlap_dirty:status(root .. '/parent') == 'loading')
+local dirty_done = false
+overlap_dirty:refresh(function() dirty_done = true end, {root})
+assert(delayed[3].path == root)
+delayed[3].done(nil, {{name = 'parent', kind = 'dir'}})
+assert(delayed[4] and delayed[4].path == root .. '/parent', 'dirty generation rescans stale loading child')
+delayed[2].done(nil, {})
+assert(not dirty_done and overlap_dirty:status(root .. '/parent') == 'loading')
+delayed[4].done(nil, {{name = 'fresh.txt', kind = 'file'}})
+assert(dirty_done and overlap_dirty:status(root .. '/parent') == 'loaded')
+
 local deep_calls = {}
 local deep_fixture = {
   [root] = {{name = 'A', kind = 'dir'}},

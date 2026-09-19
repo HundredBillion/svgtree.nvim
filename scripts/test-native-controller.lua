@@ -27,15 +27,23 @@ while ready==0 do
 end
 local revision=calls.view.ack_revision
 local initial_projects=view_projects
+local function complete_last() calls[#calls].args[#calls[#calls].args](nil) end
 calls.opts.on_event({type='input',key='j',text='j'})
 assert(calls[#calls].name=='state' and view_projects==initial_projects,'native selection must send state without row projection')
-calls[#calls].args[#calls[#calls].args](nil)
+assert(calls[#calls].args[2].scroll==nil,'ordinary selection does not resend scroll')
+complete_last()
+calls.opts.on_event({type='list_scroll',revision=revision,top=root..'/two.lua',offset=2,visible_rows=10})
 calls.opts.on_event({type='input',key='slash',text='/'})
 assert(calls[#calls].name=='state' and view_projects==initial_projects,'native search must send state without row projection')
-calls[#calls].args[#calls[#calls].args](nil)
+complete_last()
+calls.opts.on_event({type='input',key='o',text='o'})
+assert(calls[#calls].name=='state')
+complete_last()
+calls.opts.on_event({type='list_scroll',revision=revision,top=root..'/one.lua',offset=0,visible_rows=10})
 calls.opts.on_event({type='input',key='escape'})
 assert(calls[#calls].name=='state' and view_projects==initial_projects,'native search cancel must reuse rows')
-calls[#calls].args[#calls[#calls].args](nil)
+assert(vim.deep_equal(calls[#calls].args[2].scroll,{id=root..'/two.lua',offset=2}), 'cancel restores original native scroll')
+complete_last()
 assert(revision>0)
 i=#calls+1
 calls.opts.on_event({type='list_scroll',revision=revision-1,top=root..'/one.lua',offset=3,visible_rows=10})

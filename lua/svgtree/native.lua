@@ -93,7 +93,11 @@ function M.open(root,saved,callbacks)
     if self.sent_rows and not vim.tbl_contains(vim.tbl_map(function(row) return row.id end,self.sent_rows),selected) then selected=nil end
     local patch={selected=selected or vim.NIL,status=status(s),active_guides=View.active_guides(self.sent_rows,selected)}
     if reveal and selected then patch.reveal=reveal
-    elseif initial and selected and s.scroll and s.scroll.id and not s.root_collapsed then patch.scroll={id=s.scroll.id,offset=s.scroll.offset or 0} end
+    elseif s.scroll and s.scroll.id and not s.root_collapsed
+      and (initial or not vim.deep_equal({id=s.scroll.id,offset=s.scroll.offset or 0},self.sent_scroll)) then
+      patch.scroll={id=s.scroll.id,offset=s.scroll.offset or 0}
+    end
+    if patch.scroll then self.sent_scroll=vim.deepcopy(patch.scroll) end
     self.pending_state=false; self.reveal=nil; self.busy=true; self.busy_kind='state'
     local g=self.generation
     self.handle:state(self.ack_revision,patch,function(err)
@@ -203,6 +207,7 @@ function M.open(root,saved,callbacks)
       if ev.revision~=self.ack_revision or self.busy_kind=='structure' or self.pending_description or self.desired_rows~=self.sent_rows then return end
       self.snapshot_value.scroll={id=ev.top,offset=ev.offset,visible_rows=ev.visible_rows}
       self.controller.snapshot.scroll=vim.deepcopy(self.snapshot_value.scroll);save()
+      self.sent_scroll={id=ev.top,offset=ev.offset or 0}
     elseif ev.type=='list_click' or ev.type=='list_action' then
       if ev.revision~=self.ack_revision or self.busy_kind=='structure' or self.pending_description or self.desired_rows~=self.sent_rows then return end
       if ev.type=='list_action' then
@@ -244,6 +249,7 @@ function M.open(root,saved,callbacks)
     local g=self.generation
     create_target_group()
     self.phase='opening';self.registered={};self.asset_attempted={};self.sent_rows=nil;self.ack_revision=0;self.busy=false;self.busy_kind=nil;self.pending_description=nil
+    self.sent_scroll=nil
     self.projected_rows=nil;self.projected_collapsed=nil
     self.controller=Controller.new({root=root,snapshot=self.snapshot_value,side=side,keys=native_options.mappings,compact=native_options.compact_folders,
       is_active=active,on_change=change,on_open=function(path) open_file(path,not self.click_open) end,

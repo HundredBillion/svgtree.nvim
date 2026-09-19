@@ -177,7 +177,7 @@ function Tree:refresh(callback, dirty_dirs)
         if path == self.root or self.expanded[path] or entry == sole then
           local child = join(path, entry.name)
           local child_record = self.cache[child]
-          if full or dirty[child] or not child_record or child_record.status == 'unknown' then
+          if full or dirty[child] or not child_record or child_record.status == 'unknown' or child_record.status == 'loading' then
             enqueue(child, own)
             self.cache[child].realpath = entry.realpath
           else
