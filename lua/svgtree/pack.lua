@@ -5,6 +5,20 @@
 -- nil on any failure so config can substitute the bundled starter.
 
 local M = {}
+local lowercase_maps = setmetatable({}, { __mode = 'k' })
+
+local function association(map, key)
+  if type(map) ~= 'table' or not key then return nil end
+  local index = lowercase_maps[map]
+  if not index then
+    index = {}
+    for name, id in pairs(map) do
+      if type(name) == 'string' then index[name:lower()] = id end
+    end
+    lowercase_maps[map] = index
+  end
+  return index[key:lower()]
+end
 
 -- Bundled starter dir: <this file>/../../assets/icons (pack.lua is lua/svgtree/).
 local function bundled_dir()
@@ -85,7 +99,7 @@ end
 ---@param name string basename
 ---@param kind 'dir'|'file'
 ---@param open? boolean
----@param opts? { root?: boolean }
+---@param opts? { root?: boolean, parent?: string }
 ---@return string? iconId
 function M.resolve(theme, name, kind, open, opts)
   if type(theme) ~= 'table' then
@@ -97,13 +111,13 @@ function M.resolve(theme, name, kind, open, opts)
       local root = open and (theme.rootFolderExpanded or theme.rootFolder) or theme.rootFolder
       if root then return root end
     end
-    local key = name:lower()
+    local qualified = opts and opts.parent and (opts.parent .. '/' .. name) or nil
     local id
     if open and type(theme.folderNamesExpanded) == 'table' then
-      id = theme.folderNamesExpanded[key]
+      id = association(theme.folderNamesExpanded, qualified) or association(theme.folderNamesExpanded, name)
     end
     if not id and type(theme.folderNames) == 'table' then
-      id = theme.folderNames[key]
+      id = association(theme.folderNames, qualified) or association(theme.folderNames, name)
     end
     if not id then
       id = (open and (theme.folderExpanded or theme.folder)) or theme.folder
@@ -113,13 +127,26 @@ function M.resolve(theme, name, kind, open, opts)
 
   local id
   if type(theme.fileNames) == 'table' then
-    id = theme.fileNames[name] or theme.fileNames[name:lower()]
+    id = association(theme.fileNames, opts and opts.parent and (opts.parent .. '/' .. name))
+      or association(theme.fileNames, name)
   end
   if not id then
     if type(theme.fileExtensions) == 'table' then
+      local extensions = {}
       for dot in name:gmatch('()%.') do
-        id = theme.fileExtensions[name:sub(dot + 1):lower()]
-        if id then break end
+        extensions[#extensions + 1] = name:sub(dot + 1)
+      end
+      if opts and opts.parent then
+        for _, extension in ipairs(extensions) do
+          id = association(theme.fileExtensions, opts.parent .. '/' .. extension)
+          if id then break end
+        end
+      end
+      if not id then
+        for _, extension in ipairs(extensions) do
+          id = association(theme.fileExtensions, extension)
+          if id then break end
+        end
       end
     end
   end

@@ -1,6 +1,10 @@
 vim.opt.rtp:prepend(vim.fn.getcwd())
 package.path=(vim.env.SVGTREE_API_CHECKOUT or '../native-explorer-api')..'/lua/?.lua;'..package.path
 local Native=require('svgtree.native')
+local View=require('svgtree.native_view')
+local original_view_rows=View.rows
+local view_projects=0
+View.rows=function(...) view_projects=view_projects+1; return original_view_rows(...) end
 local root=vim.fn.tempname();vim.fn.mkdir(root,'p');vim.fn.writefile({'one'},root..'/one.lua');vim.fn.writefile({'two'},root..'/two.lua')
 local calls, handle={},{}
 local sprite={register_tokens=function(_,cb) cb(nil) end,on_resume=function(cb) calls.resume=cb;return function() calls.unsub=true end end}
@@ -22,7 +26,18 @@ while ready==0 do
   assert(i<10)
 end
 local revision=calls.view.ack_revision
+local initial_projects=view_projects
+calls.opts.on_event({type='input',key='j',text='j'})
+assert(calls[#calls].name=='state' and view_projects==initial_projects,'native selection must send state without row projection')
+calls[#calls].args[#calls[#calls].args](nil)
+calls.opts.on_event({type='input',key='slash',text='/'})
+assert(calls[#calls].name=='state' and view_projects==initial_projects,'native search must send state without row projection')
+calls[#calls].args[#calls[#calls].args](nil)
+calls.opts.on_event({type='input',key='escape'})
+assert(calls[#calls].name=='state' and view_projects==initial_projects,'native search cancel must reuse rows')
+calls[#calls].args[#calls[#calls].args](nil)
 assert(revision>0)
+i=#calls+1
 calls.opts.on_event({type='list_scroll',revision=revision-1,top=root..'/one.lua',offset=3,visible_rows=10})
 assert(calls.view:snapshot().scroll.id~=root..'/one.lua')
 calls.opts.on_event({type='list_scroll',revision=revision,top=root..'/one.lua',offset=3,visible_rows=10})
@@ -263,3 +278,4 @@ assert(serial.view.ack_revision>revision_before)
 complete(next_state,nil)
 serial.view:close()
 print('native serialized root toggle: ok')
+View.rows=original_view_rows

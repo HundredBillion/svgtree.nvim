@@ -34,6 +34,12 @@ callbacks.view:close()
 assert(closed==1 and callbacks.closed)
 local d=View.description(nil,root)
 assert(d.root.kind=='virtual_list' and d.root.row_height==22 and d.root.heading.height==35)
+assert(d.root.border_side=='right')
+assert(View.description(nil,root,false,'left').root.border_side=='right')
+assert(View.description(nil,root,false,'right').root.border_side=='left')
+local border_token
+for _,token in ipairs(View.tokens()) do if token.name=='svgtree.border' then border_token=token.default end end
+assert(border_token=='#2b2b2b')
 assert(d.root.section.icon=='svgtree-chevron-down' and d.root.section.left_padding+d.root.icon_size+d.root.section.icon_gap==20)
 assert(d.root.colors.inactive_guide==d.root.colors.guide and d.root.inactive_guide_opacity==0.4,
   'inactive guide uses the reference RGB and alpha over every row background')
@@ -59,6 +65,18 @@ local nested=View.rows({
   {id='file',path=root..'/folder/child/a.lua',text='a.lua',depth=2,kind='file'},
 },pack)
 assert(nested[3].guides[1].id=='folder' and nested[3].guides[2].id=='child')
+local context_pack={theme={folder='folder',folderExpanded='folder-open',file='file',
+  folderNames={workflows='generic-workflows',['.github/workflows']='github-workflows'},
+  folderNamesExpanded={['.github/workflows']='github-workflows-open'},
+  fileNames={['.config/graphqlrc']='graphql-config'}},dir=''}
+local context_rows=View.rows({
+  {id='a',path=root..'/.github/workflows',depth=0,kind='dir',expanded=false,text='workflows'},
+  {id='b',path=root..'/.github/workflows',depth=0,kind='dir',expanded=true,text='workflows'},
+  {id='c',path=root..'/unrelated/workflows',depth=0,kind='dir',expanded=false,text='workflows'},
+  {id='d',path=root..'/.config/graphqlrc',depth=0,kind='file',text='graphqlrc'},
+},context_pack)
+assert(context_rows[1].icon=='github-workflows' and context_rows[2].icon=='github-workflows-open')
+assert(context_rows[3].icon=='generic-workflows' and context_rows[4].icon=='graphql-config')
 assert(vim.deep_equal(View.active_guides(nested,'file'),{'folder','child'}))
 assert(vim.deep_equal(View.active_guides(nested,'folder'),{'folder'}))
 local assets=View.assets(pack,ids)
@@ -90,6 +108,6 @@ vim.fn.writefile({'<svg xmlns="http://www.w3.org/2000/svg"/>'},second_dir..'/goo
 assert(View.assets({theme=custom.theme,dir=second_dir},{good=true}).good,'pack change uses new SVG')
 vim.fn.readfile=original_readfile
 local chevrons=View.assets(custom,{['svgtree-chevron-down']=true,['svgtree-chevron-right']=true})
-assert(chevrons['svgtree-chevron-down']:match('stroke=') and not chevrons['svgtree-chevron-down']:match('fill="#cccccc"'))
-assert(chevrons['svgtree-chevron-right']:match('stroke='))
+assert(chevrons['svgtree-chevron-down']:match('fill="#cccccc"') and chevrons['svgtree-chevron-down']:match('translate%(3 0%)'))
+assert(chevrons['svgtree-chevron-right']:match('fill="#cccccc"') and chevrons['svgtree-chevron-right']:match('translate%(2 0%)'))
 print('native view cache and disclosure: ok')

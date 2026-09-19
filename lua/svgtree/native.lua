@@ -181,9 +181,13 @@ function M.open(root,saved,callbacks)
   end
   local function change(rows,snapshot,reveal)
     self.snapshot_value=snapshot
-    local rendered,ids=View.rows(rows,pack)
-    if snapshot.root_collapsed then rendered={}; ids={['svgtree-chevron-right']=true} end
-    if not vim.deep_equal(rendered,self.desired_rows) then self.desired_rows=rendered;self.desired_ids=ids end
+    if rows~=self.projected_rows or snapshot.root_collapsed~=self.projected_collapsed then
+      local rendered,ids=View.rows(rows,pack)
+      if snapshot.root_collapsed then rendered={}; ids={['svgtree-chevron-right']=true} end
+      if not vim.deep_equal(rendered,self.desired_rows) then self.desired_rows=rendered;self.desired_ids=ids end
+      self.projected_rows=rows
+      self.projected_collapsed=snapshot.root_collapsed
+    end
     self.reveal=reveal
     self.pending_state=true
     save();send()
@@ -205,7 +209,7 @@ function M.open(root,saved,callbacks)
         if ev.action=='root-toggle' then
           self.snapshot_value.root_collapsed=not self.snapshot_value.root_collapsed
           self.controller.snapshot.root_collapsed=self.snapshot_value.root_collapsed
-          self.pending_description=View.description(nil,root,self.snapshot_value.root_collapsed)
+          self.pending_description=View.description(nil,root,self.snapshot_value.root_collapsed,side)
           change(self.controller.rows,self.controller.snapshot,nil)
         end
         return
@@ -240,12 +244,13 @@ function M.open(root,saved,callbacks)
     local g=self.generation
     create_target_group()
     self.phase='opening';self.registered={};self.asset_attempted={};self.sent_rows=nil;self.ack_revision=0;self.busy=false;self.busy_kind=nil;self.pending_description=nil
+    self.projected_rows=nil;self.projected_collapsed=nil
     self.controller=Controller.new({root=root,snapshot=self.snapshot_value,side=side,keys=native_options.mappings,compact=native_options.compact_folders,
       is_active=active,on_change=change,on_open=function(path) open_file(path,not self.click_open) end,
       on_close=function() self:close() end,
       on_editor_focus=function() if self.handle then self.handle:focus_editor(function(e) if current(g) and e then failure(e) end end) end end})
     sprite.open({side=side,width=self.snapshot_value.widths.native or 280,
-      description=View.description(nil,root,self.snapshot_value.root_collapsed),
+      description=View.description(nil,root,self.snapshot_value.root_collapsed,side),
       on_event=function(ev) if current(g) then event(ev) end end,on_close=function(reason)
         if not current(g) then return end
         if reason.kind=='failure' then failure(reason.error)

@@ -6,19 +6,19 @@ local tokens = {
   {'background','#181818'}, {'foreground','#cccccc'}, {'hover','#2a2d2e'},
   {'selection','#04395e'}, {'inactiveSelection','#37373d'},
   {'selectionForeground','#ffffff'}, {'focus','#0078d4'},
-  {'guide','#585858'}, {'border','#181818'}, {'scrollbar','#3f3f3f'},
+  {'guide','#585858'}, {'border','#2b2b2b'}, {'scrollbar','#3f3f3f'},
 }
 function M.tokens()
   local result={}
   for _, pair in ipairs(tokens) do result[#result+1]={name='svgtree.'..pair[1],default=pair[2],description='Explorer '..pair[1]} end
   return result
 end
-function M.description(_,root,collapsed)
+function M.description(_,root,collapsed,side)
   local name=vim.fn.fnamemodify(root,':t'):upper()
   local colors={}
   local roles={selection='selected',inactiveSelection='inactive_selected',selectionForeground='selected_foreground'}
   for _, pair in ipairs(tokens) do colors[roles[pair[1]] or pair[1]]='svgtree.'..pair[1] end
-  return {version=1,root={kind='virtual_list',row_height=22,font_size=13,
+  return {version=1,root={kind='virtual_list',border_side=side=='right' and 'left' or 'right',row_height=22,font_size=13,
     font_family='Adwaita Sans',icon_size=16,icon_gap=6,left_padding=8,right_padding=8,
     scrollbar_width=10,guide_visibility='hover',inactive_guide_opacity=0.4,
     scrollbar_opacity=0.4,scrollbar_hover_opacity=0.7,scrollbar_active_opacity=0.4,
@@ -31,7 +31,8 @@ function M.rows(model,pack)
   local ancestors={}
   for _, row in ipairs(model) do
     local name=vim.fn.fnamemodify(row.path,':t')
-    local icon=Pack.resolve(pack.theme,name,row.kind,row.expanded)
+    local parent=vim.fn.fnamemodify(row.path,':h:t')
+    local icon=Pack.resolve(pack.theme,name,row.kind,row.expanded,{parent=parent})
     if icon then ids[icon]=true end
     local leading=row.kind=='dir' and (row.expanded and 'svgtree-chevron-down' or 'svgtree-chevron-right') or 'svgtree-transparent'
     ids[leading]=true
@@ -61,8 +62,8 @@ function M.active_guides(rows,selected)
   return result
 end
 local builtin={
-  ['svgtree-chevron-right']='<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="none" stroke="#cccccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="m6 4 4 4-4 4"/></svg>',
-  ['svgtree-chevron-down']='<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="none" stroke="#cccccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="m4 6 4 4 4-4"/></svg>',
+  ['svgtree-chevron-right']='<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="#cccccc" transform="translate(2 0)" d="M6.14601 3.14579C5.95101 3.34079 5.95101 3.65779 6.14601 3.85279L10.292 7.99879L6.14601 12.1448C5.95101 12.3398 5.95101 12.6568 6.14601 12.8518C6.34101 13.0468 6.65801 13.0468 6.85301 12.8518L11.353 8.35179C11.548 8.15679 11.548 7.83979 11.353 7.64478L6.85301 3.14479C6.65801 2.94979 6.34101 2.95079 6.14601 3.14579Z"/></svg>',
+  ['svgtree-chevron-down']='<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="#cccccc" transform="translate(3 0)" d="M3.14598 5.85423L7.64598 10.3542C7.84098 10.5492 8.15798 10.5492 8.35298 10.3542L12.853 5.85423C13.048 5.65923 13.048 5.34223 12.853 5.14723C12.658 4.95223 12.341 4.95223 12.146 5.14723L7.99998 9.29323L3.85398 5.14723C3.65898 4.95223 3.34198 4.95223 3.14698 5.14723C2.95198 5.34223 2.95098 5.65923 3.14598 5.85423Z"/></svg>',
   ['svgtree-transparent']='<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"/>',
 }
 function M.assets(pack,ids)

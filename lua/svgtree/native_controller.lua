@@ -41,18 +41,20 @@ function M.new(opts)
   return self
 end
 
-function Controller:publish(reveal)
-  local old = self.rows
-  local rows = State.rows(self.tree, self.compact)
-  self.snapshot.selected = State.reconcile(rows, self.snapshot.selected)
-  self.snapshot.scroll.id = anchor(old, rows, self.snapshot.scroll.id)
-  self.rows = rows
-  self.snapshot.expanded = vim.deepcopy(self.tree.expanded)
-  self:update_search()
-  self.watch:set(self.tree:visible_dirs(self.compact))
-  if self.on_search then self.on_search(rows) end
+function Controller:publish(reveal, structure_changed)
+  if structure_changed then
+    local old = self.rows
+    local rows = State.rows(self.tree, self.compact)
+    self.snapshot.selected = State.reconcile(rows, self.snapshot.selected)
+    self.snapshot.scroll.id = anchor(old, rows, self.snapshot.scroll.id)
+    self.rows = rows
+    self.snapshot.expanded = vim.deepcopy(self.tree.expanded)
+    self:update_search()
+    self.watch:set(self.tree:visible_dirs(self.compact))
+    if self.on_search then self.on_search(rows) end
+  end
   State.save(self.root, self.snapshot)
-  self.on_change(rows, vim.deepcopy(self.snapshot), reveal)
+  self.on_change(self.rows, vim.deepcopy(self.snapshot), reveal)
 end
 
 function Controller:refresh(dirty)
@@ -62,7 +64,7 @@ function Controller:refresh(dirty)
   self.tree:refresh(function(err)
     if self.closed or generation ~= self.generation then return end
     if not err then
-      self:publish()
+      self:publish(nil, true)
       if self.pending_reveal then self:reveal_pending(self.pending_reveal) end
     end
   end, dirty)
@@ -75,7 +77,7 @@ function Controller:reveal_pending(path)
     self.pending_reveal = nil
     if not id then return end
     self.snapshot.selected = path
-    self:publish(id)
+    self:publish(id, true)
   end)
 end
 
@@ -162,11 +164,11 @@ function Controller:search_event(event)
     self.search.active=false; self.search.query=self.search.last
     self.snapshot.selected=self.search.initial_selected
     self.snapshot.scroll=self.search.initial_scroll
-    self.keys:reset(); self:publish(); return 'search_cancel'
+    self.keys:reset(); self:update_search(); self:publish(); return 'search_cancel'
   end
   if not value and key=='<CR>' then
     if self.search.query ~= '' then self.search.last=self.search.query else self.search.query=self.search.last end
-    self.search.active=false; self.keys:reset(); self:publish(); return 'search_accept'
+    self.search.active=false; self.keys:reset(); self:update_search(); self:publish(); return 'search_accept'
   end
   if not value and key=='<BS>' then
     local count=vim.fn.strchars(self.search.query)
@@ -206,7 +208,7 @@ function Controller:action(action)
     self.search.active=true; self.search.query=''
     self.search.initial_selected=self.snapshot.selected
     self.search.initial_scroll=vim.deepcopy(self.snapshot.scroll)
-    self.keys:reset(); self:publish()
+    self.keys:reset(); self:update_search(); self:publish()
   elseif action=='refresh' then self:refresh()
   elseif action=='close' then self:close(); self.on_close()
   elseif action=='focus_editor' then self.on_editor_focus()

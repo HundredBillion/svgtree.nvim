@@ -4,6 +4,10 @@ if vim.fn.filereadable(api .. '/lua/sprite/input.lua') == 0 then print('native n
 package.path = api .. '/lua/?.lua;' .. package.path
 local Tree = require('svgtree.tree')
 local Controller = require('svgtree.native_controller')
+local State = require('svgtree.state')
+local original_rows=State.rows
+local row_projects,watch_sets=0,0
+State.rows=function(...) row_projects=row_projects+1; return original_rows(...) end
 local root = vim.fn.tempname()
 vim.fn.mkdir(root .. '/dir/sub', 'p')
 vim.fn.writefile({'x'}, root .. '/alpha.txt')
@@ -12,12 +16,23 @@ vim.fn.writefile({'x'}, root .. '/dir/sub/.hidden')
 local changes, opens, focuses = {}, {}, 0
 local active = true
 local c = Controller.new({root=root, tree=Tree.new(root,{async=false,show_hidden=false}), autocmd=false,
-  watch={set=function() end,close=function() end},
+  watch={set=function() watch_sets=watch_sets+1 end,close=function() end},
   on_change=function(rows,snapshot,reveal) changes[#changes+1]={rows=rows,snapshot=snapshot,reveal=reveal} end,
   on_open=function(path) opens[#opens+1]=path end, on_editor_focus=function() focuses=focuses+1 end,
   is_active=function() return active end})
 local function key(k,t,now) return c:handle({type='input',key=k,text=t},now or 0) end
 c:refresh()
+local first_projects,first_watches=row_projects,watch_sets
+key('j','j')
+assert(row_projects==first_projects and watch_sets==first_watches,'selection must reuse structural projection and watchers')
+key('slash','/')
+key('a','a')
+assert(row_projects==first_projects and watch_sets==first_watches,'search must reuse structural projection and watchers')
+key('escape',nil)
+assert(row_projects==first_projects and watch_sets==first_watches,'search cancel must reuse structure')
+key('R','R')
+assert(row_projects>first_projects and watch_sets>first_watches,'refresh must rebuild structure and watchers')
+c.snapshot.selected=root..'/dir/sub'; c:publish()
 assert(#c.rows==2)
 assert(c.snapshot.selected==root..'/dir/sub')
 active=false; key('j','j'); assert(c.snapshot.selected==root..'/dir/sub')
@@ -66,4 +81,5 @@ key('escape',nil)
 key('G','G'); assert(changes[#changes].reveal==c.snapshot.selected, 'last requests reveal')
 key('q','q'); assert(c.closed)
 vim.fn.delete(root,'rf')
+State.rows=original_rows
 print('native navigation ok')

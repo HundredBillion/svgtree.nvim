@@ -21,3 +21,6 @@ Compact folder chains can have deeper ARIA levels than their physical indent.
 
 These captures are source measurements. They make no claim that Sprite matches
 the reference yet.
+
+The [acceptance record](acceptance.md) tracks actual Sprite and terminal runs,
+visual comparison, performance, and remaining platform checks.
