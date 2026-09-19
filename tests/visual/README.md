@@ -14,7 +14,10 @@ The reference was captured from VS Code 1.133.0 with Dark Modern, Material Icon
 Theme 5.38.1, default zoom, a clean temporary profile, and a display scale of
 2. The saved DOM measurements and font evidence are in `reference/`. The
 `tree-search` capture contains the Explorer sidebar search input; the editor
-Find screenshot from the capture session is intentionally excluded.
+Find screenshot from the capture session is intentionally excluded. The saved
+`depth-metrics.json` was measured with that search input open. Its x coordinates
+are relative to the sidebar; its row y coordinates include the search bar.
+Compact folder chains can have deeper ARIA levels than their physical indent.
 
 These captures are source measurements. They make no claim that Sprite matches
 the reference yet.

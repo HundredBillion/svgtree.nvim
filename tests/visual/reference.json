@@ -92,14 +92,25 @@
       "fontSize": 13,
       "lineHeight": 22,
       "rootLabelXRelativeToSidebar": 52,
-      "rootLabelXInCapturedWindow": 100
+      "rootLabelXInCapturedWindow": 100,
+      "indentStep": 8,
+      "indentGuideStartXRelativeToSidebar": 16,
+      "indentGuideStep": 8,
+      "twistiePaddingLeftRoot": 8,
+      "twistiePaddingRight": 6
     },
     "icon": {
-      "size": 16
+      "size": 16,
+      "textGap": 6
     },
     "sidebar": {
       "x": 48,
       "y": 35
+    },
+    "depthEvidence": {
+      "path": "reference/depth-metrics.json",
+      "context": "Actual VS Code Explorer with sidebar search open at 400 logical pixels; row y coordinates include the search bar and must not be transferred to default-state screenshots",
+      "coordinateSpace": "x coordinates are relative to the sidebar"
     }
   },
   "states": {
@@ -323,6 +334,7 @@
     "Pixel dimensions and logical dimensions are recorded per capture; width varies by state.",
     "Default screenshots are 290 logical pixels wide at scale 2.",
     "Original DOM row snapshots accompany each image.",
-    "Early screenshots were captured while the same reference project was being expanded; use each state fixtureRevision to reproduce its contents."
+    "Early screenshots were captured while the same reference project was being expanded; use each state fixtureRevision to reproduce its contents.",
+    "Compact chain rows can retain logical ARIA levels while using the physical indent of a shallower visible row; use measured indent widths and label positions for rendering."
   ]
 }
