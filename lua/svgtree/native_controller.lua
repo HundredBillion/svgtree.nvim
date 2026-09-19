@@ -26,7 +26,7 @@ function M.new(opts)
   local self = setmetatable({root=root, tree=opts.tree or Tree.new(root, {async=true}),
     snapshot=opts.snapshot or State.get(root), rows={}, on_change=opts.on_change or function() end,
     on_open=opts.on_open or function() end, on_editor_focus=opts.on_editor_focus or function() end,
-    on_close=opts.on_close or function() end,
+    on_close=opts.on_close or function() end, on_root=opts.on_root or function() end,
     keys=Keys.new(opts.keys, opts.key_timeout_ms, opts.side), is_active=opts.is_active or function() return true end, search={active=false,query='',last='',matches={}},
     on_search=opts.on_search, compact=opts.compact ~= false,
     generation=0, closed=false}, Controller)
@@ -193,7 +193,8 @@ function Controller:search_event(event)
 end
 
 function Controller:action(action)
-  if self.snapshot.root_collapsed and action ~= 'refresh' and action ~= 'close' and action ~= 'focus_editor' then return end
+  if self.snapshot.root_collapsed and action ~= 'refresh' and action ~= 'close' and action ~= 'focus_editor'
+    and action ~= 'parent_root' then return end
   local index = row_index(self.rows,self.snapshot.selected) or 1
   local row = self.rows[index]
   if action=='next' then self:select(index+1)
@@ -213,6 +214,11 @@ function Controller:action(action)
   elseif action=='refresh' then self:refresh()
   elseif action=='close' then self:close(); self.on_close()
   elseif action=='focus_editor' then self.on_editor_focus()
+  elseif action=='focus_root' and row then
+    self.on_root(row.kind=='dir' and row.path or vim.fs.dirname(row.path))
+  elseif action=='parent_root' then
+    local parent=vim.fs.dirname(self.root)
+    if parent and parent~=self.root then self.on_root(parent) end
   elseif row and (action=='open' or action=='enter') then
     if row.kind=='file' then
       self:suppress_open(row.path); self.on_open(row.path)
