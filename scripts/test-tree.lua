@@ -11,7 +11,7 @@ local function check(c, m)
 end
 
 -- ---- fixture: dirs + files + hidden entries, mixed case ----
-local root = vim.fn.tempname()
+local root = Tree.normalize(vim.fn.tempname())
 vim.fn.mkdir(root .. '/alpha', 'p')
 vim.fn.mkdir(root .. '/Beta', 'p') -- capital B: exercises case-insensitive sort
 vim.fn.mkdir(root .. '/.hidden_dir', 'p')
@@ -73,7 +73,13 @@ vim.fn.writefile({}, root .. '/雪.txt')
 local hidden_off = Tree.new(root .. '/', {show_hidden = false})
 local filtered = hidden_off:flatten()
 local filtered_names = vim.tbl_map(function(n) return n.name end, filtered)
-check(table.concat(filtered_names, ',') == 'alpha,Beta,apple.txt,Case.txt,case.txt,zebra.txt,雪.txt',
+local case_names = {}
+for _, name in ipairs(vim.fn.readdir(root)) do
+  if name:lower() == 'case.txt' then case_names[#case_names + 1] = name end
+end
+table.sort(case_names)
+local expected_filtered = 'alpha,Beta,apple.txt,' .. table.concat(case_names, ',') .. ',zebra.txt,雪.txt'
+check(table.concat(filtered_names, ',') == expected_filtered,
   'explicit false filters hidden and resolves folded ties')
 check(Tree.new(root, {show_hidden = true}):flatten()[1].name == '.hidden_dir', 'explicit true includes hidden')
 check(Tree.new('/').root == '/', 'filesystem root survives normalization')

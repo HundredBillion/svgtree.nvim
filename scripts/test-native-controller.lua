@@ -1,11 +1,12 @@
 vim.opt.rtp:prepend(vim.fn.getcwd())
 package.path=(vim.env.SVGTREE_API_CHECKOUT or '../native-explorer-api')..'/lua/?.lua;'..package.path
 local Native=require('svgtree.native')
+local Tree=require('svgtree.tree')
 local View=require('svgtree.native_view')
 local original_view_rows=View.rows
 local view_projects=0
 View.rows=function(...) view_projects=view_projects+1; return original_view_rows(...) end
-local root=vim.fn.tempname();vim.fn.mkdir(root,'p');vim.fn.writefile({'one'},root..'/one.lua');vim.fn.writefile({'two'},root..'/two.lua')
+local root=Tree.normalize(vim.fn.tempname());vim.fn.mkdir(root,'p');vim.fn.writefile({'one'},root..'/one.lua');vim.fn.writefile({'two'},root..'/two.lua')
 local calls, handle={},{}
 local sprite={register_tokens=function(_,cb) cb(nil) end,on_resume=function(cb) calls.resume=cb;return function() calls.unsub=true end end}
 function sprite.open(opts,cb) calls.opts=opts;calls.open=cb;return function() end end
@@ -289,7 +290,7 @@ superseded_open('state')
 superseded_open('focus')
 print('native initial freshness: ok')
 calls={}
-local serial_root=vim.fn.tempname();vim.fn.mkdir(serial_root,'p');vim.fn.writefile({'x'},serial_root..'/file.lua')
+local serial_root=Tree.normalize(vim.fn.tempname());vim.fn.mkdir(serial_root,'p');vim.fn.writefile({'x'},serial_root..'/file.lua')
 local serial={}
 Native.open(serial_root,nil,{ready=function(v) serial.view=v end,failed=function(e) error('serialized mutation refused: '..vim.inspect(e)) end})
 calls.open(nil,new_handle())
