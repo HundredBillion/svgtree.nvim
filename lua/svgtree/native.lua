@@ -91,7 +91,7 @@ function M.open(root,saved,callbacks)
     local s=self.snapshot_value
     local selected=s.selected
     if self.sent_rows and not vim.tbl_contains(vim.tbl_map(function(row) return row.id end,self.sent_rows),selected) then selected=nil end
-    local patch={selected=selected or vim.NIL,status=status(s)}
+    local patch={selected=selected or vim.NIL,status=status(s),active_guides=View.active_guides(self.sent_rows,selected)}
     if reveal and selected then patch.reveal=reveal
     elseif initial and selected and s.scroll and s.scroll.id and not s.root_collapsed then patch.scroll={id=s.scroll.id,offset=s.scroll.offset or 0} end
     self.pending_state=false; self.reveal=nil; self.busy=true; self.busy_kind='state'

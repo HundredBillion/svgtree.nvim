@@ -51,6 +51,14 @@ local model={{id=root..'/a.lua',path=root..'/a.lua',text='a.lua',depth=0,kind='f
 local pack=require('svgtree.icons').resolve_pack('native')
 local rows,ids=View.rows(model,pack)
 assert(#rows==1 and rows[1].indent==0 and rows[1].leading=='svgtree-transparent')
+local nested=View.rows({
+  {id='folder',path=root..'/folder',text='folder',depth=0,kind='dir',expanded=true},
+  {id='child',path=root..'/folder/child',text='child',depth=1,kind='dir',expanded=true},
+  {id='file',path=root..'/folder/child/a.lua',text='a.lua',depth=2,kind='file'},
+},pack)
+assert(nested[3].guides[1].id=='folder' and nested[3].guides[2].id=='child')
+assert(vim.deep_equal(View.active_guides(nested,'file'),{'folder','child'}))
+assert(vim.deep_equal(View.active_guides(nested,'folder'),{'folder'}))
 local assets=View.assets(pack,ids)
 assert(assets['svgtree-transparent'])
 local many={}
