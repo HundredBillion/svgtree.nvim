@@ -107,3 +107,115 @@ require('svgtree.state').save(savedroot,{widths={native=280}})
 local cancel_saved=Native.open(savedroot,nil,{})
 assert(calls.opts.width==280,'explicitly saved width must win over configured width')
 cancel_saved()
+local function pending(name,start)
+  for at=start or 1,#calls do if calls[at].name==name then return calls[at],at end end
+end
+local function complete(call,err)
+  for _,value in pairs(call.args) do if type(value)=='function' then value(err);return end end
+  error('missing callback')
+end
+local function finish_open(holder)
+  local at=1
+  assert(vim.wait(1000,function() return #calls>0 end))
+  while not holder.view do
+    local call=calls[at];assert(call and at<15,'opening stalled')
+    complete(call,nil);at=at+1
+  end
+end
+local collapsed={root=root,expanded={},selected=root..'/one.lua',scroll={id=root..'/one.lua',offset=3},widths={native=280},root_collapsed=true}
+calls={}
+local collapsed_holder={}
+Native.open(root,collapsed,{ready=function(v) collapsed_holder.view=v end,failed=function(e) error('collapsed open refused: '..vim.inspect(e)) end})
+assert(calls.opts.description.root.section.icon=='svgtree-chevron-right')
+calls.open(nil,new_handle())
+finish_open(collapsed_holder)
+local rowcall=pending('rows')
+assert(#rowcall.args[2]==0)
+local statecall=pending('state')
+assert(statecall.args[2].scroll==nil and statecall.args[2].selected==vim.NIL)
+local assetcall=pending('assets')
+assert(assetcall.args[1]['svgtree-chevron-right'])
+local saved_view=collapsed_holder.view
+local old_group=saved_view.target_group
+assert(old_group)
+calls.opts.on_close({kind='suspend'})
+assert(saved_view.phase=='suspended' and saved_view.target_group==nil)
+local resume_collapsed=calls.resume;calls={};resume_collapsed()
+assert(calls.opts.description.root.section.icon=='svgtree-chevron-right')
+calls.open(nil,new_handle())
+collapsed_holder.view=nil
+finish_open(collapsed_holder)
+assert(collapsed_holder.view:snapshot().scroll.id==root..'/one.lua')
+assert(collapsed_holder.view.target_group and collapsed_holder.view.target_group~=old_group)
+collapsed_holder.view:close()
+print('native collapsed reopen and resume: ok')
+
+calls={}
+local late_failed=0
+local stale_holder={}
+Native.open(root,nil,{ready=function(v) stale_holder.view=v end,failed=function() late_failed=late_failed+1 end})
+calls.open(nil,new_handle())
+assert(vim.wait(1000,function() return #calls>0 end))
+local stale_asset=pending('assets')
+local old_opts=calls.opts
+old_opts.on_close({kind='suspend'})
+complete(stale_asset,{code='closed'})
+assert(late_failed==0 and not stale_holder.view)
+local resume_late=calls.resume;calls={};resume_late()
+local next_opts=calls.opts
+calls.open(nil,new_handle())
+complete(stale_asset,nil)
+old_opts.on_close({kind='failure',error={code='unavailable'}})
+assert(late_failed==0 and calls.opts==next_opts)
+finish_open(stale_holder)
+assert(stale_holder.view and late_failed==0)
+stale_holder.view:close()
+print('native late callback isolation: ok')
+calls={}
+local closed_late=0
+local cancel_mutation=Native.open(root,nil,{failed=function() closed_late=closed_late+1 end})
+calls.open(nil,new_handle())
+assert(vim.wait(1000,function() return #calls>0 end))
+local late_closed_asset=pending('assets')
+cancel_mutation()
+complete(late_closed_asset,{code='closed'})
+complete(late_closed_asset,nil)
+assert(closed_late==0 and calls.closed==1)
+local function superseded_open(change_at)
+  local dir=vim.fn.tempname();vim.fn.mkdir(dir..'/nested','p')
+  local target=dir..'/nested/target.lua';vim.fn.writefile({'x'},target)
+  calls={}
+  local result={ready=0,failed=0}
+  Native.open(dir,nil,{ready=function(v) result.ready=result.ready+1;result.view=v end,failed=function() result.failed=result.failed+1 end})
+  calls.open(nil,new_handle())
+  assert(vim.wait(1000,function() return pending('assets')~=nil end))
+  complete(pending('assets'),nil)
+  complete(pending('rows'),nil)
+  local first_state=pending('state')
+  if change_at=='state' then
+    vim.cmd('edit '..vim.fn.fnameescape(target))
+    assert(vim.wait(1000,function() return require('svgtree.state').get(dir).selected==target end))
+  end
+  complete(first_state,nil)
+  local cursor=4
+  if change_at=='focus' then
+    local first_focus=pending('focus')
+    assert(first_focus)
+    vim.cmd('edit '..vim.fn.fnameescape(target))
+    assert(vim.wait(1000,function() return require('svgtree.state').get(dir).selected==target end))
+    complete(first_focus,nil)
+    cursor=5
+  end
+  assert(result.ready==0,'superseded initial model must not be ready')
+  while not result.view do
+    assert(vim.wait(1000,function() return calls[cursor]~=nil end),'replacement model did not settle')
+    complete(calls[cursor],nil)
+    cursor=cursor+1
+    assert(cursor<20,'replacement model did not settle')
+  end
+  assert(result.failed==0 and result.view.ack_revision>=2)
+  result.view:close()
+end
+superseded_open('state')
+superseded_open('focus')
+print('native initial freshness: ok')

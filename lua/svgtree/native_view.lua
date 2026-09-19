@@ -1,5 +1,7 @@
 local Pack = require('svgtree.pack')
 local M = {}
+local asset_cache = {}
+function M.clear_cache() asset_cache = {} end
 local tokens = {
   {'background','#181818'}, {'foreground','#cccccc'}, {'hover','#2a2d2e'},
   {'selection','#04395e'}, {'inactiveSelection','#37373d'},
@@ -37,8 +39,8 @@ function M.rows(model,pack)
   return rows,ids
 end
 local builtin={
-  ['svgtree-chevron-right']='<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="#cccccc" d="m6 4 4 4-4 4z"/></svg>',
-  ['svgtree-chevron-down']='<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="#cccccc" d="m4 6 4 4 4-4z"/></svg>',
+  ['svgtree-chevron-right']='<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="none" stroke="#cccccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="m6 4 4 4-4 4"/></svg>',
+  ['svgtree-chevron-down']='<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="none" stroke="#cccccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="m4 6 4 4 4-4"/></svg>',
   ['svgtree-transparent']='<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"/>',
 }
 function M.assets(pack,ids)
@@ -47,16 +49,23 @@ function M.assets(pack,ids)
     local svg=builtin[id]
     if not svg then
       local path=Pack.icon_svg(pack.theme,pack.dir,id)
-      if path and vim.fn.filereadable(path)==1 then
-        local ok,lines=pcall(vim.fn.readfile,path)
-        if ok then
-          svg=table.concat(lines,'\n'):gsub('^%s*<%?xml.-%?>%s*',''):gsub('^%s*<!%-%-.-%-%->%s*','')
-          if not svg:match('^%s*<svg[%s>]') or not (svg:match('</svg>%s*$') or svg:match('/>%s*$')) then svg=nil end
+      local key=pack.dir .. '\0' .. id .. '\0' .. (path or '')
+      local cached=asset_cache[key]
+      if cached==nil then
+        svg=false
+        if path and vim.fn.filereadable(path)==1 then
+          local ok,lines=pcall(vim.fn.readfile,path)
+          if ok then
+            local source=table.concat(lines,'\n'):gsub('^%s*<%?xml.-%?>%s*',''):gsub('^%s*<!%-%-.-%-%->%s*','')
+            if source:match('^%s*<svg[%s>]') and (source:match('</svg>%s*$') or source:match('/>%s*$')) then svg=source end
+          end
         end
-      end
+        asset_cache[key]=svg
+      else svg=cached end
     end
     if svg then result[id]=svg end
   end
   return result
 end
+
 return M

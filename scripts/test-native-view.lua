@@ -65,3 +65,21 @@ local custom={theme={iconDefinitions={good={iconPath='good.svg'},bad={iconPath='
 local icons=View.assets(custom,{good=true,bad=true,missing=true,self=true})
 assert(icons.good and icons.good:match('^<svg') and icons.self and not icons.bad and not icons.missing)
 print('native view assets and cancel: ok')
+local read_count=0
+local original_readfile=vim.fn.readfile
+vim.fn.readfile=function(path,...)
+  if path==customdir..'/good.svg' or path==customdir..'/missing.svg' then read_count=read_count+1 end
+  return original_readfile(path,...)
+end
+View.clear_cache()
+View.assets(custom,{good=true,missing=true})
+View.assets(custom,{good=true,missing=true})
+assert(read_count==1,'SVG and missing icon results are cached across handles')
+local second_dir=vim.fn.tempname();vim.fn.mkdir(second_dir,'p')
+vim.fn.writefile({'<svg xmlns="http://www.w3.org/2000/svg"/>'},second_dir..'/good.svg')
+assert(View.assets({theme=custom.theme,dir=second_dir},{good=true}).good,'pack change uses new SVG')
+vim.fn.readfile=original_readfile
+local chevrons=View.assets(custom,{['svgtree-chevron-down']=true,['svgtree-chevron-right']=true})
+assert(chevrons['svgtree-chevron-down']:match('stroke=') and not chevrons['svgtree-chevron-down']:match('fill="#cccccc"'))
+assert(chevrons['svgtree-chevron-right']:match('stroke='))
+print('native view cache and disclosure: ok')
