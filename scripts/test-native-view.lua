@@ -35,6 +35,8 @@ assert(closed==1 and callbacks.closed)
 local d=View.description(nil,root)
 assert(d.root.kind=='virtual_list' and d.root.row_height==22 and d.root.heading.height==35)
 assert(d.root.section.icon=='svgtree-chevron-down' and d.root.section.left_padding+d.root.icon_size+d.root.section.icon_gap==20)
+assert(d.root.colors.inactive_guide==d.root.colors.guide and d.root.inactive_guide_opacity==0.4,
+  'inactive guide uses the reference RGB and alpha over every row background')
 for _,key in ipairs({'background','foreground','hover','selected','inactive_selected','selected_foreground','focus','guide','border','scrollbar'}) do assert(d.root.colors[key],key) end
 print('native view: ok')
 local fake={}
