@@ -3,13 +3,19 @@ local Keys = {}
 Keys.__index = Keys
 
 local function bindings(side)
+  local focus_editor = side == 'right' and '<C-w>h' or '<C-w>l'
+  -- Also accept Neovim's common <C-h>/<C-l> split-navigation mappings.
+  -- Those expand to <C-w><C-h>/<C-w><C-l>, rather than the literal h/l
+  -- sequence that the native Explorer originally handled.
+  local focus_editor_mapped = side == 'right' and '<C-w><C-h>' or '<C-w><C-l>'
+  local focus_editor_direct = side == 'right' and '<C-h>' or '<C-l>'
   return {
     j='next', k='previous', h='parent', l='enter', ['<Down>']='next', ['<Up>']='previous',
     ['<Left>']='parent', ['<Right>']='enter', ['<Home>']='first', ['<End>']='last',
     ['<C-d>']='half_down', ['<C-u>']='half_up', gg='first', G='last',
     ['<CR>']='open', R='refresh', q='close', ['<Esc>']='close', ['/']='search',
     n='search_next', N='search_previous', ['.']='focus_root', ['<BS>']='parent_root',
-    [side == 'right' and '<C-w>h' or '<C-w>l']='focus_editor',
+    [focus_editor]='focus_editor', [focus_editor_mapped]='focus_editor', [focus_editor_direct]='focus_editor',
   }
 end
 local allowed = {}

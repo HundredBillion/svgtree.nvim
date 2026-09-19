@@ -51,6 +51,8 @@ key('backspace',nil); assert(roots[#roots]==vim.fs.dirname(root), 'backspace mov
 c.snapshot.selected=root..'/dir/sub'
 key('h','h'); assert(not c.tree:is_expanded(root..'/dir/sub'))
 key('ctrl-w',nil); key('l','l'); assert(focuses==1)
+key('ctrl-w',nil); key('ctrl-l',nil); assert(focuses==2, 'supports Neovim <C-l> window mapping')
+key('ctrl-l',nil); assert(focuses==3, 'supports direct <C-l> native input')
 key('slash','/'); assert(c.search.active and c.snapshot.search.query=='')
 local before_search=c.snapshot.selected
 key('enter','x'); assert(c.search.active and c.snapshot.search.query=='x')
