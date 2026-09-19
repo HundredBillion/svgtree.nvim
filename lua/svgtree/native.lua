@@ -62,18 +62,23 @@ function M.open(root,saved,callbacks)
   end
   local function active() return self.phase=='ready' and self.focused end
   local function open_file(path,focus)
-    if not vim.uv.fs_stat(path) or vim.uv.fs_stat(path).type~='file' then
-      vim.notify('File is no longer available: '..path,vim.log.levels.ERROR)
+    local stat=vim.uv.fs_stat(path)
+    if not stat or stat.type~='file' then
+      vim.notify('File is no longer available',vim.log.levels.ERROR)
       self.controller.suppressed=nil; return false
     end
     if not normal(self.target) then
       vim.notify('No normal editing window is available',vim.log.levels.ERROR)
       self.controller.suppressed=nil; return false
     end
-    local ok,err=pcall(vim.api.nvim_win_call,self.target,function()
+    if vim.bo[vim.api.nvim_win_get_buf(self.target)].modified then
+      vim.notify('Save changes before opening another file',vim.log.levels.WARN)
+      self.controller.suppressed=nil; return false
+    end
+    local ok=pcall(vim.api.nvim_win_call,self.target,function()
       vim.api.nvim_cmd({cmd='edit',args={path}}, {})
     end)
-    if not ok then vim.notify(tostring(err),vim.log.levels.ERROR); self.controller.suppressed=nil; return false end
+    if not ok then vim.notify('Could not open file',vim.log.levels.ERROR); self.controller.suppressed=nil; return false end
     if focus and self.handle then
       local g=self.generation
       self.handle:focus_editor(function(e) if current(g) and e then failure(e) end end)
