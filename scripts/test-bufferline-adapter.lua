@@ -9,6 +9,13 @@ local cap = require('svgtree.capability')
 local raster = require('svgtree.raster')
 local icon_cfg = require('svgtree.config').options.icon
 local A = require('svgtree.adapters.bufferline')
+local kitty = require('svgtree.kitty')
+local direct_calls = 0
+local transmit_direct = kitty.transmit_direct
+kitty.transmit_direct = function(png)
+  direct_calls = direct_calls + 1
+  return transmit_direct(png)
+end
 
 local fails = 0
 local function check(c, m)
@@ -54,6 +61,7 @@ if raster.has_converter() then
   end)
   local _, hl_ts = A.get_element_icon({ path = '/proj/app.ts', filetype = 'typescript', directory = false })
   check(hl_ts ~= nil and hl_ts ~= hl, 'distinct filetype -> distinct highlight group')
+  check(direct_calls >= 2, 'bufferline uses direct PNG transfer for image icons')
 else
   print('  skip (no rasterizer): build-path assertions')
 end

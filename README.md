@@ -323,7 +323,7 @@ can display SVG icons inside Sprite.
 
 ### bufferline.nvim (tabs)
 
-Show each buffer's icon on its tab, matching the explorer. The tabline isn't a buffer, so this adapter doesn't use the overlay engine — it returns the icon as Kitty placeholder text + a highlight whose foreground colour carries the image id, via bufferline's `get_element_icon` hook. This works when running `nvim` in Sprite Terminal or Ghostty. Sprite Terminal sets `TERM=xterm-ghostty`, so both use the same setup. The separate `sprite-nvim` native-grid launcher does not yet render Kitty image placeholders in its Neovim tabline.
+Show each buffer's icon on its tab, matching the explorer. The tabline isn't a buffer, so this adapter doesn't use the overlay engine — it returns the icon as Kitty placeholder text + a highlight whose foreground colour carries the image id, via bufferline's `get_element_icon` hook. Ghostty renders these placeholders directly. Sprite Terminal also needs a build with [Kitty Unicode-placeholder rendering](https://github.com/HundredBillion/Sprite/pull/38); older Sprite builds show placeholder glyphs in bufferline. Sprite's native Explorer uses SVG assets independently. The separate `sprite-nvim` native-grid launcher does not yet render Kitty image placeholders in its Neovim tabline.
 
 ```lua
 -- LazyVim: ~/.config/nvim/lua/plugins/bufferline.lua
@@ -336,6 +336,13 @@ return {
       adapter.setup()
       local fallback = opts.options.get_element_icon
       opts.options.color_icons = true
+      opts.options.offsets = opts.options.offsets or {}
+      table.insert(opts.options.offsets, {
+        filetype = "svgtree",
+        text = "SVGTree",
+        highlight = "Directory",
+        text_align = "left",
+      })
       opts.options.get_element_icon = function(element)
         local icon, highlight = adapter.get_element_icon(element)
         if icon then return icon, highlight end
@@ -347,7 +354,7 @@ return {
 }
 ```
 
-Keep your existing svgtree setup, restart `nvim` in Sprite Terminal or Ghostty, and open a file so bufferline displays its name and icon. The image adapter requires the same terminal graphics prerequisites as the tree. When they're unavailable, the existing LazyVim icon callback remains in use.
+Keep your existing svgtree setup, restart `nvim` in Sprite Terminal or Ghostty, and open a file so bufferline displays its name and icon. The image adapter requires the same terminal graphics prerequisites as the tree. When they're unavailable, the existing LazyVim icon callback remains in use. The `svgtree` offset keeps Ghostty's bufferline tabs aligned with editor windows when the tree is open; Sprite's native Explorer sits outside Neovim's window grid, so that offset is unused there.
 
 ## How it works
 
