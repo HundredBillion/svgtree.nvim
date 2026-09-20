@@ -1,4 +1,6 @@
 vim.opt.runtimepath:prepend(vim.fn.getcwd())
+local api = vim.env.SVGTREE_API_CHECKOUT or (vim.fn.getcwd() .. '/../native-explorer-api')
+package.path = api .. '/lua/?.lua;' .. api .. '/lua/?/init.lua;' .. package.path
 
 local root = vim.fn.tempname()
 vim.fn.mkdir(root, 'p')
@@ -24,6 +26,13 @@ vim.notify = function(message) notifications[#notifications + 1] = message end
 
 local calls, handle = {}, {}
 package.loaded.sprite = {
+  available = function(callback)
+    callback(nil, { features = {
+      ['owned-dock-v1'] = true, ['virtual-list-v1'] = true,
+      ['svg-assets-v1'] = true, ['dock-resize-v1'] = true,
+    } })
+    return function() end
+  end,
   register_tokens = function(_, callback) callback(nil) end,
   on_resume = function() return function() end end,
   open = function(opts, callback) calls.opts = opts; calls.open = callback end,
@@ -33,11 +42,16 @@ for _, name in ipairs({ 'assets', 'rows', 'state', 'focus', 'focus_editor', 'upd
 end
 function handle:close() calls.opts.on_close({ kind = 'requested' }) end
 
-local Native = require('svgtree.native')
 local ready
-Native.open(root, { selected = file, expanded = {}, widths = { native = 280 } }, {
-  ready = function(view) ready = view end,
-})
+local Native = require('svgtree.native')
+package.loaded['svgtree.native'] = { open = function(path, saved, callbacks)
+  local on_ready = callbacks.ready
+  callbacks.ready = function(view) ready = view; on_ready(view) end
+  return Native.open(path, saved, callbacks)
+end }
+local tree = require('svgtree')
+tree.setup({ renderer = 'sprite' })
+tree.open(root)
 calls.open(nil, handle)
 local index = 1
 while not ready do
@@ -46,6 +60,22 @@ while not ready do
   callback(nil)
   index = index + 1
 end
+
+local function count(name)
+  local n = 0
+  for _, call in ipairs(calls) do if call.name == name then n = n + 1 end end
+  return n
+end
+local initial_focus = count('focus')
+calls.opts.on_event({ type = 'input', key = 'ctrl-l' })
+assert(count('focus_editor') == 1, 'Ctrl-L must leave the initial left Sprite tree for the editor')
+calls.opts.on_event({ type = 'blur' })
+vim.keymap.set('n', '<C-h>', function()
+  if not tree.focus('left') then vim.cmd.wincmd('h') end
+end)
+vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<C-h>', true, false, true), 'x', false)
+assert(count('focus') == initial_focus + 1, 'Ctrl-H must re-enter the initial Sprite tree')
+calls.opts.on_event({ type = 'focus' })
 
 calls.opts.on_event({ type = 'list_click', revision = ready.ack_revision, id = file, count = 1, button = 'left' })
 assert(vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(dashboard_win)) == file,
@@ -63,9 +93,7 @@ vim.api.nvim_win_set_buf(dashboard_win, special_buf)
 vim.api.nvim_set_current_win(picker_win)
 calls = {}
 ready = nil
-Native.open(root, { selected = file, expanded = {}, widths = { native = 280 } }, {
-  ready = function(view) ready = view end,
-})
+tree.open(root)
 calls.open(nil, handle)
 index = 1
 while not ready do

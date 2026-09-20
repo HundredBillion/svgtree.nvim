@@ -43,6 +43,25 @@ you want its native sidebar; add it as a dependency in the spec above if you
 lazy-load both plugins. The first file selected from a dashboard opens in the
 main editor window. Other special windows remain intact.
 
+If you want `<leader>e` to toggle svgtree instead of Snacks Explorer, opt in
+by adding a native close mapping to the plugin spec and an editor mapping to
+`~/.config/nvim/lua/config/keymaps.lua`. With LazyVim's default Space leader:
+
+```lua
+-- In the svgtree plugin spec above, replace opts = {} with:
+opts = { native = { mappings = { ['<Space>e'] = 'close' } } },
+```
+
+```lua
+-- ~/.config/nvim/lua/config/keymaps.lua
+vim.keymap.set('n', '<leader>e', '<cmd>SvgTreeToggle<cr>', { desc = 'Toggle svgtree' })
+```
+
+The editor mapping overrides LazyVim's `<leader>e` only when you add it. Sprite
+handles its own keys while the native sidebar has focus, so the matching
+`<Space>e` action closes it there. The terminal tree receives the Neovim
+mapping directly.
+
 Install `svgtree.nvim` and put the optional `sprite.nvim` plugin API on
 Neovim's runtime path for native Sprite support. Ordinary Neovim needs only
 `svgtree.nvim`. Call `require('svgtree').setup({})` and open it with
