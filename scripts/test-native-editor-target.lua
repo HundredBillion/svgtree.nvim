@@ -1,5 +1,6 @@
 vim.opt.runtimepath:prepend(vim.fn.getcwd())
 local api = vim.env.SVGTREE_API_CHECKOUT or (vim.fn.getcwd() .. '/../native-explorer-api')
+api = vim.fn.fnamemodify(api, ':p')
 package.path = api .. '/lua/?.lua;' .. api .. '/lua/?/init.lua;' .. package.path
 
 local root = vim.fn.tempname()

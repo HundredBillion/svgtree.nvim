@@ -86,6 +86,34 @@ function M.transmit(png)
   return id
 end
 
+---Transmit PNG bytes under a fresh image id. The tabline uses this path so
+---its graphics upload does not disturb images already placed in the sidebar.
+---@param png string absolute path to a PNG file
+---@return integer? image_id
+function M.transmit_direct(png)
+  local file = io.open(png, 'rb')
+  if not file then
+    return nil
+  end
+  local bytes = file:read('*a')
+  file:close()
+  if not bytes or bytes == '' then
+    return nil
+  end
+  next_id = next_id + 1
+  local id = next_id
+  local encoded = vim.base64.encode(bytes)
+  local chunk_size = 4096
+  for pos = 1, #encoded, chunk_size do
+    local last = pos + chunk_size > #encoded
+    local control = pos == 1
+        and { a = 't', t = 'd', f = 100, i = id, q = 2, m = last and 0 or 1 }
+      or { m = last and 0 or 1 }
+    write(seq(control, encoded:sub(pos, pos + chunk_size - 1)))
+  end
+  return id
+end
+
 ---Create a *virtual* unicode-placeholder placement for an image (a=p, U=1).
 ---This is the step that binds placeholder cells to the transmitted image: a
 ---virtual placement occupies no screen cell itself; the image renders wherever

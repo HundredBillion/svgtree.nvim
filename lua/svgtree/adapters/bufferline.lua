@@ -68,7 +68,10 @@ local function build(stem)
   if not png then
     return nil
   end
-  local id = kitty.transmit(png)
+  local id = kitty.transmit_direct(png)
+  if not id then
+    return nil
+  end
   kitty.place_default(id, icon.width, icon.height)
   cache[stem] = {
     id = id,

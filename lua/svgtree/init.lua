@@ -53,13 +53,16 @@ local function fallback(root, token, err)
   local saved, existing = State.get(root)
   if not existing then saved = nil end
   active = {kind = 'terminal', root = root}
-  terminal().open(root, saved)
+  terminal().open(root, saved, function(path)
+    if token == generation then M.open(path) end
+  end)
 end
 
 function M.open(root)
   if not config.options.resolved then M.setup({}) end
-  M.close()
   root = Tree.normalize(root or vim.uv.cwd())
+  vim.api.nvim_set_current_dir(root)
+  M.close()
   local token = generation
   if config.options.renderer == 'terminal' then fallback(root, token); return end
   local ok, sprite = pcall(require, 'sprite')
