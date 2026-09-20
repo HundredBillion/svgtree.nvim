@@ -202,10 +202,12 @@ Inside the tree:
 |---|---|
 | `<CR>` / `l` | Expand/collapse a directory, or open a file |
 | `h` | Collapse the directory under the cursor |
+| `.` / `<BS>` | Make the selected directory the root / move the root to its parent |
 | `R` | Refresh |
 | `q` | Close |
 
 Commands: `:SvgTree [dir]` opens the tree (defaults to cwd); `:SvgTreeToggle [dir]` toggles it.
+Opening or changing the root also changes Neovim's global working directory. Closing and reopening the tree keeps that root, and searches that use the working directory follow it.
 
 ## Icon packs
 
@@ -321,26 +323,31 @@ can display SVG icons inside Sprite.
 
 ### bufferline.nvim (tabs)
 
-Show each buffer's icon on its tab, matching the explorer. The tabline isn't a buffer, so this adapter doesn't use the overlay engine — it returns the icon as Kitty placeholder text + a highlight whose foreground colour carries the image id, via bufferline's `get_element_icon` hook.
+Show each buffer's icon on its tab, matching the explorer. The tabline isn't a buffer, so this adapter doesn't use the overlay engine — it returns the icon as Kitty placeholder text + a highlight whose foreground colour carries the image id, via bufferline's `get_element_icon` hook. This works when running `nvim` in Sprite Terminal or Ghostty. Sprite Terminal sets `TERM=xterm-ghostty`, so both use the same setup. The separate `sprite-nvim` native-grid launcher does not yet render Kitty image placeholders in its Neovim tabline.
 
 ```lua
--- lua/plugins/bufferline.lua
-require("svgtree.adapters.bufferline").setup() -- once; pre-warms tab icons
-opts = {
-  options = {
-    -- Required: the image id rides in the icon highlight's fg, so color_icons
-    -- must stay on (color_icons = false forces fg = NONE and breaks the icon).
-    color_icons = true,
-    get_element_icon = function(element)
-      -- Returns nil on stable nvim / non-graphics terminals, so bufferline
-      -- falls back to its usual glyph (e.g. mini.icons / nvim-web-devicons).
-      return require("svgtree.adapters.bufferline").get_element_icon(element)
+-- LazyVim: ~/.config/nvim/lua/plugins/bufferline.lua
+return {
+  {
+    "akinsho/bufferline.nvim",
+    dependencies = { "HundredBillion/svgtree.nvim" },
+    opts = function(_, opts)
+      local adapter = require("svgtree.adapters.bufferline")
+      adapter.setup()
+      local fallback = opts.options.get_element_icon
+      opts.options.color_icons = true
+      opts.options.get_element_icon = function(element)
+        local icon, highlight = adapter.get_element_icon(element)
+        if icon then return icon, highlight end
+        if fallback then return fallback(element) end
+      end
+      return opts
     end,
   },
 }
 ```
 
-All three require the same prerequisites as the main tree. When they're unavailable, the adapters no-op and the host renders as usual.
+Keep your existing svgtree setup, restart `nvim` in Sprite Terminal or Ghostty, and open a file so bufferline displays its name and icon. The image adapter requires the same terminal graphics prerequisites as the tree. When they're unavailable, the existing LazyVim icon callback remains in use.
 
 ## How it works
 

@@ -1,4 +1,5 @@
 vim.opt.runtimepath:prepend(vim.fn.getcwd())
+local original_cwd=vim.fn.getcwd()
 local first, second = vim.fn.tempname(), vim.fn.tempname()
 vim.fn.mkdir(first, 'p'); vim.fn.mkdir(second, 'p')
 local features = {['owned-dock-v1']=true,['virtual-list-v1']=true,['svg-assets-v1']=true,['dock-resize-v1']=true}
@@ -87,6 +88,7 @@ assert(tree.focus('left') and native_focuses==1, 'focus enters the native left s
 assert(not tree.focus('right') and native_focuses==1, 'opposite direction falls through to normal window navigation')
 navigation.callbacks.root(first)
 assert(tree.root()==first and calls[#calls]=='native-close', 'native root navigation replaces the active tree')
+assert(vim.fn.getcwd()==first, 'native root navigation changes the editor directory')
 local focused_available=availability[#availability]
 assert(focused_available~=navigation_available, 'native root navigation starts a new availability check')
 focused_available.callback(nil,{features=features})
@@ -102,5 +104,6 @@ package.loaded['svgtree.native_view']={clear_cache=function() clears=clears+1 en
 tree.setup({renderer='auto'})
 assert(clears==1,'setup invalidates cached SVG bytes after pack replacement')
 vim.notify=notify
+vim.api.nvim_set_current_dir(original_cwd)
 vim.fn.delete(first,'rf');vim.fn.delete(second,'rf')
 print('native dispatch ok')

@@ -130,6 +130,19 @@ local function on_collapse()
   end
 end
 
+local function on_focus_root()
+  if not view or not view.on_root then return end
+  local line = vim.api.nvim_win_get_cursor(view.win)[1]
+  local node = view.nodes[line]
+  if node then view.on_root(node.kind == 'dir' and node.path or vim.fs.dirname(node.path)) end
+end
+
+local function on_parent_root()
+  if not view or not view.on_root then return end
+  local parent = vim.fs.dirname(view.tree.root)
+  if parent and parent ~= view.tree.root then view.on_root(parent) end
+end
+
 local function map(lhs, fn)
   if not view then
     return
@@ -153,7 +166,7 @@ function M.snapshot()
 end
 
 ---@param root? string defaults to cwd
-function M.open(root, saved)
+function M.open(root, saved, on_root)
   if view then
     close()
   end
@@ -197,6 +210,7 @@ function M.open(root, saved)
     nodes = {},
     grp = grp,
     images = capability.supported(),
+    on_root = on_root,
   }
   for path, expanded in pairs(saved.expanded or {}) do
     if expanded and vim.uv.fs_stat(path) then view.tree.expanded[path] = true end
@@ -228,6 +242,8 @@ function M.open(root, saved)
   map('<CR>', on_enter)
   map('l', on_enter)
   map('h', on_collapse)
+  map('.', on_focus_root)
+  map('<BS>', on_parent_root)
   map('R', rebuild)
   map('q', close)
 
