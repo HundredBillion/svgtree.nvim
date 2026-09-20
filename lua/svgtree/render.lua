@@ -71,12 +71,15 @@ local function rebuild()
 end
 
 -- Re-render text (re-truncate to the new width) without re-scanning the tree.
--- Used on window/editor resize; the engine re-places images on its own.
+-- Replacing buffer lines displaces extmarks, so re-anchor icons after the write.
 local function relayout()
   if not view then
     return
   end
   render_lines()
+  if view.engine then
+    view.engine.reconcile()
+  end
 end
 
 local function close()
@@ -216,9 +219,8 @@ function M.open(root, saved, on_root)
     if expanded and vim.uv.fs_stat(path) then view.tree.expanded[path] = true end
   end
 
-  -- Weld an icon to each visible line via the shared placement engine. It
-  -- owns its own augroup and self-binds scroll/resize, so render.lua only
-  -- needs to call refresh() after a structural change (expand/collapse).
+  -- Weld an icon to each visible line via the shared placement engine.
+  -- The engine handles cursor movement; text rewrites must re-anchor icons.
   if view.images then
     view.engine = engine.attach({
       win = win,
@@ -251,8 +253,7 @@ function M.open(root, saved, on_root)
   -- (keymaps + a leftcol-snap on view.grp, torn down with the view on close).
   winlock.lock_horizontal(win, buf, grp)
 
-  -- On resize, the window width changed: re-truncate names. (The engine
-  -- re-places images on its own resize handler.)
+  -- On resize, re-truncate names and restore their icon anchors.
   vim.api.nvim_create_autocmd({ 'VimResized', 'WinResized' }, {
     group = grp,
     callback = relayout,

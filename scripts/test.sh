@@ -35,5 +35,13 @@ for s in "${scripts[@]}"; do
   echo
 done
 
+echo '=== Sprite terminal icon relayout ==='
+if "$NVIM" --clean -l scripts/test-ghostty-initial-launch.lua sprite; then
+  echo 'PASS: Sprite terminal icon relayout'
+else
+  echo 'FAIL: Sprite terminal icon relayout'
+  fail=1
+fi
+
 if [ "$fail" -ne 0 ]; then echo "SUITE FAILED"; exit 1; fi
 echo "SUITE PASSED"
