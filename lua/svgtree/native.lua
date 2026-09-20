@@ -5,10 +5,21 @@ local Icons=require('svgtree.icons')
 local View=require('svgtree.native_view')
 local Config=require('svgtree.config')
 local M={}
+local function main_window(win)
+  return win and vim.api.nvim_win_is_valid(win)
+    and vim.api.nvim_win_get_tabpage(win)==vim.api.nvim_get_current_tabpage()
+    and vim.api.nvim_win_get_config(win).relative==''
+end
 local function normal(win)
-  if not vim.api.nvim_win_is_valid(win) then return false end
+  if not main_window(win) then return false end
   local buf=vim.api.nvim_win_get_buf(win)
   return vim.bo[buf].buftype==''
+end
+local function replaceable(win)
+  if not main_window(win) then return false end
+  local buf=vim.api.nvim_win_get_buf(win)
+  return vim.bo[buf].buftype=='nofile' and vim.bo[buf].bufhidden=='wipe'
+    and not vim.bo[buf].buflisted and not vim.bo[buf].modified
 end
 function M.open(root,saved,callbacks)
   callbacks=callbacks or {}
@@ -61,25 +72,49 @@ function M.open(root,saved,callbacks)
     if reason~='suspend' and callbacks.closed and not finished then finished=true; callbacks.closed() end
   end
   local function active() return self.phase=='ready' and self.focused end
+  local function target_window()
+    if normal(self.target) then return self.target end
+    local windows=vim.api.nvim_tabpage_list_wins(0)
+    for _,win in ipairs(windows) do
+      if normal(win) then self.target=win; return win end
+    end
+    for _,win in ipairs(windows) do
+      if replaceable(win) then self.target=win; return win end
+    end
+    for _,win in ipairs(windows) do
+      if main_window(win) then
+        local buf=vim.api.nvim_create_buf(false,true)
+        local ok,target=pcall(vim.api.nvim_open_win,buf,false,{split='right',win=win})
+        if not ok then vim.api.nvim_buf_delete(buf,{force=true}); return nil end
+        self.target=target
+        return target,true
+      end
+    end
+  end
   local function open_file(path,focus)
     local stat=vim.uv.fs_stat(path)
     if not stat or stat.type~='file' then
       vim.notify('File is no longer available',vim.log.levels.ERROR)
       self.controller.suppressed=nil; return false
     end
-    if not normal(self.target) then
+    local target,created=target_window()
+    if not target then
       vim.notify('No normal editing window is available',vim.log.levels.ERROR)
       self.controller.suppressed=nil; return false
     end
-    if not vim.o.hidden and vim.bo[vim.api.nvim_win_get_buf(self.target)].modified then
+    if not vim.o.hidden and vim.bo[vim.api.nvim_win_get_buf(target)].modified then
       vim.notify('Save changes before opening another file',vim.log.levels.WARN)
       self.controller.suppressed=nil; return false
     end
-    local ok=pcall(vim.api.nvim_win_call,self.target,function()
+    local ok=pcall(vim.api.nvim_win_call,target,function()
       vim.api.nvim_cmd({cmd='edit',args={path}}, {})
     end)
-    if not ok then vim.notify('Could not open file',vim.log.levels.ERROR); self.controller.suppressed=nil; return false end
+    if not ok then
+      if created and vim.api.nvim_win_is_valid(target) then vim.api.nvim_win_close(target,true); self.target=nil end
+      vim.notify('Could not open file',vim.log.levels.ERROR); self.controller.suppressed=nil; return false
+    end
     if focus and self.handle then
+      vim.api.nvim_set_current_win(target)
       local g=self.generation
       self.handle:focus_editor(function(e) if current(g) and e then failure(e) end end)
     end
@@ -234,7 +269,8 @@ function M.open(root,saved,callbacks)
       elseif ev.count==1 then
         self.controller:publish(row.id); self.click_open=true; self.controller:action('open'); self.click_open=false
       elseif ev.count==2 then
-        if vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(self.target))==row.path then
+        if normal(self.target) and vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(self.target))==row.path then
+          vim.api.nvim_set_current_win(self.target)
           local g=self.generation
           self.handle:focus_editor(function(e) if current(g) and e then failure(e) end end)
         else open_file(row.path,true) end

@@ -22,67 +22,45 @@ renderer instead.
 
 ### LazyVim setup
 
-Install [Sprite](https://github.com/HundredBillion/sprite.nvim), then add this
-file to your LazyVim configuration. It makes svgtree the only file explorer:
-it disables Snacks Explorer's automatic directory view, opens svgtree with
-`<leader>e`, and keeps focus navigation working between the editor and
-Sprite's native sidebar. With LazyVim's default leader, `<leader>` is Space.
+Add this file to your LazyVim configuration. LazyVim keeps its dashboard,
+Snacks Explorer, and `<leader>e` mapping. Svgtree adds its own commands and
+does not need to know which explorer or dashboard your distribution uses.
 
 ```lua
 -- ~/.config/nvim/lua/plugins/svgtree.lua
 return {
-  -- Keep Snacks' other features, but do not use its Explorer.
-  {
-    "folke/snacks.nvim",
-    opts = { explorer = { enabled = false } },
-    keys = {
-      { "<leader>e", false },
-      { "<leader>E", false },
-    },
-  },
   {
     "HundredBillion/svgtree.nvim",
-    dependencies = { "HundredBillion/sprite.nvim" },
-    opts = function()
-      local in_sprite = vim.env.SPRITE_SURFACE_SOCKET ~= nil
-      return {
-        renderer = in_sprite and "sprite" or "terminal",
-        pack = in_sprite and nil or "material",
-        -- Lets Space, then e close the focused native sidebar.
-        native = { mappings = { ["<Space>e"] = "close" } },
-      }
-    end,
-    keys = {
-      {
-        "<leader>e",
-        function() require("svgtree").toggle(LazyVim.root()) end,
-        desc = "SVGTree Explorer",
-      },
-      {
-        "<C-h>",
-        function()
-          local tree = require("svgtree")
-          if not tree.focus("left") then vim.cmd("wincmd h") end
-        end,
-        desc = "Focus left window or SVGTree",
-      },
-      {
-        "<C-l>",
-        function()
-          local tree = require("svgtree")
-          if not tree.focus("right") then vim.cmd("wincmd l") end
-        end,
-        desc = "Focus right window or SVGTree",
-      },
-    },
+    opts = {},
+    cmd = { "SvgTree", "SvgTreeToggle" },
   },
 }
 ```
 
-For the default left sidebar, press `<C-l>` to move from Sprite's Explorer to
-the editor and `<C-h>` to return. `<leader>e` opens or closes svgtree from an
-editor buffer; Space followed by `e` closes it while the native sidebar has
-focus. No Shift is required for Ctrl-H or Ctrl-L.
+Use `:SvgTree` to open the tree and `:SvgTreeToggle` to close or reopen it.
+Install [Sprite](https://github.com/HundredBillion/sprite.nvim) separately if
+you want its native sidebar; add it as a dependency in the spec above if you
+lazy-load both plugins. The first file selected from a dashboard opens in the
+main editor window. Other special windows remain intact.
+
+If you want `<leader>e` to toggle svgtree instead of Snacks Explorer, opt in
+by adding a native close mapping to the plugin spec and an editor mapping to
+`~/.config/nvim/lua/config/keymaps.lua`. With LazyVim's default Space leader:
+
+```lua
+-- In the svgtree plugin spec above, replace opts = {} with:
+opts = { native = { mappings = { ['<Space>e'] = 'close' } } },
+```
+
+```lua
+-- ~/.config/nvim/lua/config/keymaps.lua
+vim.keymap.set('n', '<leader>e', '<cmd>SvgTreeToggle<cr>', { desc = 'Toggle svgtree' })
+```
+
+The editor mapping overrides LazyVim's `<leader>e` only when you add it. Sprite
+handles its own keys while the native sidebar has focus, so the matching
+`<Space>e` action closes it there. The terminal tree receives the Neovim
+mapping directly.
 
 Install `svgtree.nvim` and put the optional `sprite.nvim` plugin API on
 Neovim's runtime path for native Sprite support. Ordinary Neovim needs only
@@ -131,9 +109,9 @@ example:
 require('svgtree').setup({ native = { mappings = { ['<Space>'] = 'enter', j = false } } })
 ```
 
-Because a native sidebar is not a Neovim split, make your editor-side window
-mappings call `focus(side)` before falling back to `:wincmd`. This keeps direct
-`<C-h>`/`<C-l>` navigation working in both directions:
+Because a native sidebar is not a Neovim split, editor-side window mappings
+can call `focus(side)` before falling back to `:wincmd`. If you choose to map
+`<C-h>`/`<C-l>` for navigation in both directions:
 
 ```lua
 local tree = require('svgtree')
@@ -146,22 +124,9 @@ vim.keymap.set('n', '<C-h>', focus('left', 'h'))
 vim.keymap.set('n', '<C-l>', focus('right', 'l'))
 ```
 
-To use `<leader>e` to open and close the tree with Space as your leader, bind
-it in both places. The native sidebar owns keyboard focus while it is open,
-so a Neovim mapping alone cannot receive the second press:
-
-```lua
--- Set vim.g.mapleader = ' ' before loading plugins.
-local tree = require('svgtree')
-tree.setup({ native = { mappings = { ['<Space>e'] = 'close' } } })
-vim.keymap.set('n', '<leader>e', function()
-  tree.toggle(vim.uv.cwd())
-end, { desc = 'Toggle SVGTree Explorer' })
-```
-
-The Neovim mapping opens or closes the terminal tree and opens the native tree;
-the native mapping closes the focused native tree. Use the corresponding key
-sequence in `native.mappings` if your leader is different.
+The command interface works without any keymap. If you choose a shortcut of
+your own, map `:SvgTreeToggle` in Neovim and the matching `close` action in
+`native.mappings` when using Sprite's native sidebar.
 
 See [visual acceptance](tests/visual/acceptance.md) for reference captures and
 the current platform and manual verification status.
