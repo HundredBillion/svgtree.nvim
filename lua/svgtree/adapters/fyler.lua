@@ -55,7 +55,13 @@ local function attach(instance, visible)
       local item = entries[buf] and entries[buf][line]
       if not item then return nil end
       -- Fyler indents each depth by two bytes, then renders the icon slot.
-      return { col = (item.depth or 0) * 2 + 1, stem = stem_for(item), key = item.path }
+      local col = (item.depth or 0) * 2 + 1
+      -- Only overlay cells M.icon reserved. Without them (Fyler not using this
+      -- provider, or another provider's glyph) the overlay would hide the name.
+      local text = vim.api.nvim_buf_get_lines(buf, line - 1, line, false)[1] or ''
+      local width = config.options.icon.width
+      if text:sub(col, col + width - 1) ~= string.rep(' ', width) then return nil end
+      return { col = col, stem = stem_for(item), key = item.path }
     end,
   })
 end

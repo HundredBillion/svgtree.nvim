@@ -302,7 +302,16 @@ require("neo-tree").setup({
 
 Fyler remains the editable terminal-buffer file manager; this adapter overlays
 its icon cells with svgtree SVGs. It requires Fyler's custom icon-provider
-support. Set up Fyler first, then register the adapter:
+support.
+
+It is experimental because it relies on Fyler's internal extension hook
+(`finder_refresh_post`) and its line layout, which may change between Fyler
+releases. It is not a known-broken integration.
+
+Both steps below are needed: `integrations.icon = fyler_icons.icon` reserves the
+icon cells, and `fyler_icons.setup()` draws into them. If Fyler's icon provider
+isn't set, the adapter draws nothing rather than covering file names. Set up
+Fyler first, then register the adapter:
 
 ```lua
 local fyler_icons = require("svgtree.adapters.fyler")
