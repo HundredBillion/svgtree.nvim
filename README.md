@@ -345,13 +345,6 @@ return {
       adapter.setup()
       local fallback = opts.options.get_element_icon
       opts.options.color_icons = true
-      opts.options.offsets = opts.options.offsets or {}
-      table.insert(opts.options.offsets, {
-        filetype = "svgtree",
-        text = "SVGTree",
-        highlight = "Directory",
-        text_align = "left",
-      })
       opts.options.get_element_icon = function(element)
         local icon, highlight = adapter.get_element_icon(element)
         if icon then return icon, highlight end
@@ -363,7 +356,7 @@ return {
 }
 ```
 
-Keep your existing svgtree setup, restart `nvim` in Sprite Terminal or Ghostty, and open a file so bufferline displays its name and icon. The image adapter requires the same terminal graphics prerequisites as the tree. When they're unavailable, the existing LazyVim icon callback remains in use. The `svgtree` offset keeps Ghostty's bufferline tabs aligned with editor windows when the tree is open; Sprite's native Explorer sits outside Neovim's window grid, so that offset is unused there.
+Keep your existing svgtree setup, restart `nvim` in Sprite Terminal or Ghostty, and open a file so bufferline displays its name and icon. The image adapter requires the same terminal graphics prerequisites as the tree. When they're unavailable, the existing LazyVim icon callback remains in use. You don't need to add a bufferline offset for the tree: whenever the terminal tree opens (in Ghostty, kitty, or Sprite's terminal fallback), svgtree registers a `svgtree` offset so tabs start to the right of it. It re-adds the offset if bufferline reloads its config. To change the label or highlight, add your own `{ filetype = "svgtree", ... }` entry to `offsets`; svgtree then leaves yours alone. Sprite's native Explorer sits outside Neovim's window grid, so it needs no offset.
 
 ## How it works
 
