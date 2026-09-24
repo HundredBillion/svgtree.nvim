@@ -45,7 +45,7 @@ function M.png_path(iconId)
   if path_mem[iconId] then
     return path_mem[iconId]
   end
-  local resolved = config.options.resolved
+  local resolved = config.resolved()
   local svg = require('svgtree.pack').icon_svg(resolved.theme, resolved.dir, iconId)
   if not svg or vim.fn.filereadable(svg) == 0 then
     return nil
@@ -77,7 +77,7 @@ end
 
 ---Pre-rasterize every icon in the active theme so later placement never blocks.
 function M.warm()
-  local resolved = config.options.resolved
+  local resolved = config.resolved()
   for id in pairs(resolved.theme.iconDefinitions or {}) do
     M.png_path(id)
   end

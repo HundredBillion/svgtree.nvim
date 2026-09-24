@@ -176,7 +176,7 @@ function M.open(root, saved, on_root)
   end
   root = root or vim.uv.cwd()
   local existing
-  if not saved then saved, existing = State.get(root) else existing = true end
+  saved, existing = State.resolve(root, saved)
 
   local prev_win = vim.api.nvim_get_current_win()
   local cmd = config.options.window.side == 'right' and 'botright vsplit' or 'topleft vsplit'

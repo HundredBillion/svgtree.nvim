@@ -75,5 +75,19 @@ check(specs[2] == false, 'depth 1 without slot -> no overlay')
 specs = resolve_all({ fyler_line(0, '\u{f07b}', 2, 'sales-copilot-ui') }, { visible[1] })
 check(specs[1] == false, 'foreign glyph in slot -> no overlay')
 
+-- icon_or: svgtree's blank slot when it can draw, the fallback otherwise.
+local fallback_args
+local provider = A.icon_or(function(...) fallback_args = { ... }; return 'G', 'GlyphHl' end)
+check(provider('file', '/p/a.lua', {}) == string.rep(' ', width), 'icon_or reserves the slot when graphics work')
+check(fallback_args == nil, 'icon_or skips the fallback when svgtree draws')
+local real_supported = cap.supported_cached
+cap.supported_cached = function() return false end
+local glyph, glyph_hl = provider('directory', '/p/src', { open = true })
+check(glyph == 'G' and glyph_hl == 'GlyphHl', 'icon_or returns the fallback without graphics')
+check(fallback_args and fallback_args[1] == 'directory' and fallback_args[2] == '/p/src'
+  and fallback_args[3].open == true, 'icon_or passes Fyler\'s arguments through')
+check(A.icon_or()('file', '/p/a.lua', {}) == nil, 'icon_or without a fallback returns nil')
+cap.supported_cached = real_supported
+
 if fails > 0 then print(fails .. ' failure(s)'); os.exit(1) end
 print('fyler adapter: all checks passed')

@@ -57,7 +57,7 @@ stop()
 fake.open_cb(nil,handle)
 assert(cancelled_ready==0)
 local model={{id=root..'/a.lua',path=root..'/a.lua',text='a.lua',depth=0,kind='file'}}
-local pack=require('svgtree.icons').resolve_pack('native')
+local pack=require('svgtree.config').resolved()
 local rows,ids=View.rows(model,pack)
 assert(#rows==1 and rows[1].indent==0 and rows[1].leading=='svgtree-transparent')
 local nested=View.rows({

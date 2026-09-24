@@ -13,6 +13,13 @@ function M.get(root)
   return vim.deepcopy(saved[root] or initial(root)), saved[root] ~= nil
 end
 
+---State to open `root` with: `saved` when the caller supplies one, else the
+---stored state. `existing` is false only for a root that was never saved.
+function M.resolve(root, saved)
+  if saved ~= nil then return saved, true end
+  return M.get(root)
+end
+
 function M.save(root, snapshot)
   root = Tree.normalize(root)
   local state = vim.tbl_deep_extend('force', initial(root), vim.deepcopy(snapshot or {}))

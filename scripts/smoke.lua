@@ -16,10 +16,10 @@ assert(vim.fn.isdirectory(config.options.resolved.dir) == 1, 'pack dir missing')
 local cases = {
   { 'main.py', 'file', 'python' },
   { 'app.ts', 'file', 'typescript' },
-  { 'Cargo.toml', 'file', 'rust' },
+  { 'Cargo.toml', 'file', 'toml' },
   { '.gitignore', 'file', 'git' },
-  { 'README', 'file', 'file' },
-  { 'src', 'dir', 'directory' },
+  { 'README', 'file', 'readme' },
+  { 'src', 'dir', 'folder-src' },
 }
 for _, c in ipairs(cases) do
   local got = icons.stem(c[1], c[2])

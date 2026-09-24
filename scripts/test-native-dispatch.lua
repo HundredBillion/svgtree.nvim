@@ -6,7 +6,8 @@ vim.fn.mkdir(first, 'p'); vim.fn.mkdir(second, 'p')
 local features = {['owned-dock-v1']=true,['virtual-list-v1']=true,['svg-assets-v1']=true,['dock-resize-v1']=true}
 local calls, pending, availability, warnings = {}, {}, {}, {}
 local root, kind, width = nil, nil, nil
-local render = {open=function(path,saved) root=path;kind='terminal';width=saved and saved.widths.terminal;calls[#calls+1]='terminal' end,
+-- Like the real renderer, the stub reads the saved state for the root it opens.
+local render = {open=function(path,saved) saved=require('svgtree.state').resolve(path,saved); root=path;kind='terminal';width=saved.widths.terminal;calls[#calls+1]='terminal' end,
   close=function() root=nil;kind=nil;calls[#calls+1]='terminal-close' end,
   root=function() return root end,
   snapshot=function() return {root=root,expanded={},widths={terminal=width or 36,native=280}} end}

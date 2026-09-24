@@ -88,28 +88,29 @@ check(pack.resolve(material.theme, 'workflows', 'dir', false, { parent = '.githu
 check(pack.resolve(material.theme, 'workflows', 'dir', true, { parent = '.github' }) == 'folder-gh-workflows-open', 'bundled Material contextual expanded folder')
 check(pack.resolve(material.theme, 'graphqlrc', 'file', false, { parent = '.config' }) == 'graphql', 'bundled Material contextual filename')
 local icons = require('svgtree.icons')
-local native = icons.resolve_pack('native')
-check(native ~= nil and native.dir == material.dir, 'native default uses Material')
-check(icons.resolve_pack('terminal').dir == b.dir, 'terminal default uses starter')
 local config = require('svgtree.config')
+-- One resolved pack serves every renderer (terminal tree, adapters, native).
+local function active() return config.options.resolved.dir end
+config.setup({})
+check(active() == material.dir, 'default pack is bundled Material')
 config.setup({ pack = d })
-check(icons.resolve_pack('native').dir == d, 'native explicit path wins')
-check(icons.resolve_pack('terminal').dir == d, 'terminal explicit path wins')
+check(active() == d, 'explicit path wins')
 check(icons.stem('entry', 'file') == '_a', 'host adapter uses configured pack')
+config.setup({ pack = 'no-such-pack' })
+check(active() == b.dir, 'unknown pack falls back to the starter set')
 local old_data = vim.env.XDG_DATA_HOME
 local isolated_data = vim.fn.tempname()
 vim.env.XDG_DATA_HOME = isolated_data
 local data_dir = vim.fn.stdpath('data')
 check(data_dir:sub(1, #isolated_data) == isolated_data, 'isolated data path')
-config.setup({ pack = 'material' })
-local host_dir = config.options.resolved.dir
 local installed_dir = data_dir .. '/svgtree/packs/material'
 vim.fn.mkdir(installed_dir, 'p')
 vim.fn.writefile({ vim.json.encode({ iconDefinitions = { installed = { iconPath = './installed.svg' } }, file = 'installed' }) }, installed_dir .. '/icon-theme.json')
-check(icons.resolve_pack('native').dir == installed_dir, 'installed Material wins for native')
-check(icons.resolve_pack('terminal').dir == host_dir, 'host pack remains configured while native selects installed Material')
+config.setup({ pack = 'material' })
+check(active() == installed_dir, 'installed Material wins')
 vim.fn.delete(installed_dir, 'rf')
-check(icons.resolve_pack('native').dir == material.dir, 'missing installed Material uses bundled')
+config.setup({ pack = 'material' })
+check(active() == material.dir, 'missing installed Material uses bundled')
 vim.env.XDG_DATA_HOME = old_data
 
 -- ---- load failures -> nil ----
