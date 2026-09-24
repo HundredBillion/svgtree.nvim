@@ -21,7 +21,7 @@ fi
 cd "$(dirname "$0")/.." || exit 2
 
 SVGTREE_NVIM="$NVIM" bash scripts/test-core.sh || exit 1
-scripts=(scripts/test-capability.lua scripts/test-winlock.lua scripts/test-raster.lua scripts/test-ghostty-initial-launch.lua scripts/test-truncate.lua scripts/test-kitty.lua scripts/test-bufferline-adapter.lua scripts/test-fyler-adapter.lua)
+scripts=(scripts/test-capability.lua scripts/test-winlock.lua scripts/test-raster.lua scripts/test-ghostty-initial-launch.lua scripts/test-truncate.lua scripts/test-kitty.lua scripts/test-bufferline-adapter.lua scripts/test-fyler-adapter.lua scripts/test-tabline-offset.lua)
 fail=0
 for s in "${scripts[@]}"; do
   [ -f "$s" ] || continue        # a script is added by the Task that introduces it

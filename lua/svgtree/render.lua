@@ -12,6 +12,7 @@ local Tree = require('svgtree.tree')
 local winlock = require('svgtree.winlock')
 local text = require('svgtree.text')
 local State = require('svgtree.state')
+local tabline = require('svgtree.tabline')
 
 local M = {}
 
@@ -175,7 +176,7 @@ function M.open(root, saved, on_root)
   end
   root = root or vim.uv.cwd()
   local existing
-  if not saved then saved, existing = State.get(root) else existing = true end
+  saved, existing = State.resolve(root, saved)
 
   local prev_win = vim.api.nvim_get_current_win()
   local cmd = config.options.window.side == 'right' and 'botright vsplit' or 'topleft vsplit'
@@ -191,6 +192,7 @@ function M.open(root, saved, on_root)
   vim.bo[buf].bufhidden = 'wipe'
   vim.bo[buf].swapfile = false
   vim.bo[buf].filetype = 'svgtree'
+  tabline.ensure_offset()
   for opt, val in pairs({
     number = false,
     relativenumber = false,

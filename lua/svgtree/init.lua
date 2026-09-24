@@ -50,10 +50,8 @@ local function fallback(root, token, err)
     vim.notify('SVGTree Sprite renderer unavailable: ' .. reason, vim.log.levels.WARN)
   end
   if config.options.renderer ~= 'terminal' then graphics() end
-  local saved, existing = State.get(root)
-  if not existing then saved = nil end
   active = {kind = 'terminal', root = root}
-  terminal().open(root, saved, function(path)
+  terminal().open(root, nil, function(path)
     if token == generation then M.open(path) end
   end)
 end
@@ -84,9 +82,7 @@ function M.open(root)
         return
       end
     end
-    local saved, existing = State.get(root)
-    if not existing then saved = nil end
-    local opened, cancel = pcall(function() return require('svgtree.native').open(root, saved, {
+    local opened, cancel = pcall(function() return require('svgtree.native').open(root, nil, {
       ready = function(view)
         if token ~= generation then view:close(); return end
         active = {kind = 'native', root = root, view = view, cancel = function() view:close() end}

@@ -23,6 +23,18 @@ function M.icon()
   return string.rep(' ', config.options.icon.width), nil
 end
 
+---Fyler icon provider that falls back to `fallback` (another provider, e.g.
+---mini.icons) wherever svgtree draws no image. Configure as `integrations.icon`.
+---@param fallback? fun(fs_type: string, fs_path: string, state: table): string?, string?
+---@return fun(fs_type: string, fs_path: string, state: table): string?, string?
+function M.icon_or(fallback)
+  return function(...)
+    local icon, hl = M.icon(...)
+    if icon or not fallback then return icon, hl end
+    return fallback(...)
+  end
+end
+
 local function detach(buf)
   if handles[buf] then handles[buf].detach(); handles[buf] = nil end
   entries[buf] = nil
@@ -87,7 +99,6 @@ function M.on_refresh(instance, visible)
     end
     return
   end
-  if not config.options.resolved then config.setup({}) end
   attach(instance, visible)
 end
 

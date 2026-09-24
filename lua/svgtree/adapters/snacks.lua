@@ -198,9 +198,6 @@ local function attach(picker)
     end)
     return
   end
-  if not config.options.resolved then
-    config.setup({})
-  end
   -- Window+buffer handles (guaranteed present by the guard above).
   local win, buf = list.win.win, list.win.buf
 

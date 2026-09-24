@@ -5,9 +5,9 @@
 **Use VS Code SVG file icons in Sprite's native Explorer or terminal Neovim.**
 
 Sprite opens a native, resizable Explorer beside Neovim. Ordinary Neovim keeps
-the terminal tree and its image or text icon fallback. The native tree uses a
-pinned Material Icon Theme and Dark Modern colors by default; the terminal tree
-keeps the bundled starter icons unless you choose a pack.
+the terminal tree and its image or text icon fallback. Both use a pinned
+Material Icon Theme by default (the native tree also uses Dark Modern colors),
+unless you choose a pack.
 
 ## Native Explorer in Sprite
 
@@ -172,7 +172,7 @@ return {
 
 No default keymap is set — bind `:SvgTreeToggle` to whatever key you like, e.g. add `keys = { { "<leader>t", "<cmd>SvgTreeToggle<cr>", desc = "Toggle svgtree" } }` to the spec above.
 
-The terminal tree gets the bundled starter set. For a custom theme, see [Icon packs](#icon-packs) below.
+The terminal tree uses the bundled Material icons, like the native tree. For a custom theme, see [Icon packs](#icon-packs) below.
 
 ## Use it
 
@@ -211,9 +211,11 @@ Opening or changing the root also changes Neovim's global working directory. Clo
 
 ## Icon packs
 
-svgtree reads **VS Code file-icon themes directly**. It bundles the original
-terminal starter set and Material Icon Theme 5.38.1 for the native default.
-An explicit `pack` selection applies to both renderers. Theme association keys
+svgtree reads **VS Code file-icon themes directly**. It bundles Material Icon
+Theme 5.38.1 as the default for every renderer, plus a small starter set used
+only if a selected pack fails to load. A `pack` selection applies to every
+renderer and adapter; `pack = "material"` uses your installed copy and falls
+back to the bundled one. Theme association keys
 can match a filename or its immediate parent and filename, case insensitively.
 
 **Install a theme** (needs `curl` + `unzip`):
@@ -243,7 +245,7 @@ Defaults:
 
 ```lua
 require("svgtree").setup({
-  pack = nil,            -- nil = native Material / terminal starter; a name or absolute pack path overrides both
+  pack = nil,            -- nil = bundled Material; a name or absolute pack path applies to every renderer
   icon = {
     width = 2,           -- icon footprint in cells
     height = 1,
@@ -309,7 +311,11 @@ It is experimental because it relies on Fyler's internal extension hook
 releases. It is not a known-broken integration.
 
 Both steps below are needed: `integrations.icon = fyler_icons.icon` reserves the
-icon cells, and `fyler_icons.setup()` draws into them. If Fyler's icon provider
+icon cells, and `fyler_icons.setup()` draws into them. To keep glyph icons where
+svgtree can't draw images, pass another provider to `fyler_icons.icon_or(...)`
+instead, e.g. `fyler_icons.icon_or(function(fs_type, fs_path) return
+require("mini.icons").get(fs_type == "directory" and "directory" or "file",
+fs_path) end)`. If Fyler's icon provider
 isn't set, the adapter draws nothing rather than covering file names. Set up
 Fyler first, then register the adapter:
 
@@ -343,27 +349,16 @@ return {
     opts = function(_, opts)
       local adapter = require("svgtree.adapters.bufferline")
       adapter.setup()
-      local fallback = opts.options.get_element_icon
       opts.options.color_icons = true
-      opts.options.offsets = opts.options.offsets or {}
-      table.insert(opts.options.offsets, {
-        filetype = "svgtree",
-        text = "SVGTree",
-        highlight = "Directory",
-        text_align = "left",
-      })
-      opts.options.get_element_icon = function(element)
-        local icon, highlight = adapter.get_element_icon(element)
-        if icon then return icon, highlight end
-        if fallback then return fallback(element) end
-      end
+      -- SVG icons once ready; your existing callback (LazyVim's) otherwise.
+      opts.options.get_element_icon = adapter.get_element_icon_or(opts.options.get_element_icon)
       return opts
     end,
   },
 }
 ```
 
-Keep your existing svgtree setup, restart `nvim` in Sprite Terminal or Ghostty, and open a file so bufferline displays its name and icon. The image adapter requires the same terminal graphics prerequisites as the tree. When they're unavailable, the existing LazyVim icon callback remains in use. The `svgtree` offset keeps Ghostty's bufferline tabs aligned with editor windows when the tree is open; Sprite's native Explorer sits outside Neovim's window grid, so that offset is unused there.
+Keep your existing svgtree setup, restart `nvim` in Sprite Terminal or Ghostty, and open a file so bufferline displays its name and icon. The image adapter requires the same terminal graphics prerequisites as the tree. When they're unavailable, the existing LazyVim icon callback remains in use. You don't need to add a bufferline offset for the tree: whenever the terminal tree opens (in Ghostty, kitty, or Sprite's terminal fallback), svgtree registers a `svgtree` offset so tabs start to the right of it. It re-adds the offset if bufferline reloads its config. To change the label or highlight, add your own `{ filetype = "svgtree", ... }` entry to `offsets`; svgtree then leaves yours alone. Sprite's native Explorer sits outside Neovim's window grid, so it needs no offset.
 
 ## How it works
 

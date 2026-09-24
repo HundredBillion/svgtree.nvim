@@ -84,10 +84,6 @@ function M.on_render(args)
     end
     return
   end
-  if not config.options.resolved then
-    config.setup({})
-  end
-
   local state = args and (args.state or args)
   local win = state and state.winid
   if not (win and vim.api.nvim_win_is_valid(win)) then

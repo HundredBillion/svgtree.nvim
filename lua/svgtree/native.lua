@@ -1,7 +1,6 @@
 local Controller=require('svgtree.native_controller')
 local State=require('svgtree.state')
 local Tree=require('svgtree.tree')
-local Icons=require('svgtree.icons')
 local View=require('svgtree.native_view')
 local Config=require('svgtree.config')
 local M={}
@@ -24,15 +23,15 @@ end
 function M.open(root,saved,callbacks)
   callbacks=callbacks or {}
   root=Tree.normalize(root)
-  local existing=false
-  if saved==nil then saved,existing=State.get(root) else existing=true end
+  local existing
+  saved,existing=State.resolve(root,saved)
   saved=vim.deepcopy(saved)
   saved.widths=saved.widths or {native=280}
   local native_options=Config.options.native or {}
   if native_options.width and not existing then saved.widths.native=native_options.width end
   local side=native_options.side or (Config.options.window and Config.options.window.side) or 'left'
   local sprite=require('sprite')
-  local pack=Icons.resolve_pack('native')
+  local pack=Config.resolved()
   local self={wanted=true,phase='opening',root_path=root,snapshot_value=saved,
     revision=0,sent_revision=0,ack_revision=0,generation=0,registered={},target=vim.api.nvim_get_current_win()}
   local finished=false

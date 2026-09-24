@@ -25,10 +25,9 @@
 --   opts = function(_, opts)
 --     require("svgtree.adapters.bufferline").setup()
 --     opts.options.color_icons = true
---     opts.options.get_element_icon = function(el)
---       local text, hl = require("svgtree.adapters.bufferline").get_element_icon(el)
---       return text, hl  -- nil falls through to bufferline's glyph path
---     end
+--     -- SVG icon once ready, else the existing callback (or bufferline's glyph).
+--     opts.options.get_element_icon = require("svgtree.adapters.bufferline")
+--       .get_element_icon_or(opts.options.get_element_icon)
 --     return opts
 --   end
 
@@ -48,12 +47,6 @@ local queue = {}
 local flushing = false
 local did_setup = false
 
-local function ensure_resolved()
-  if not config.options.resolved then
-    config.setup({})
-  end
-end
-
 -- Transmit + place + build text/hl for one stem. Writes terminal escapes, so it
 -- MUST run outside tabline evaluation. Returns the cached rec, or nil when the
 -- theme (and its default-file fallback) has no SVG for the stem.
@@ -61,9 +54,8 @@ local function build(stem)
   if cache[stem] then
     return cache[stem]
   end
-  ensure_resolved()
   local icon = config.options.icon
-  local default_file = config.options.resolved and config.options.resolved.theme.file
+  local default_file = config.resolved().theme.file
   local png = raster.png_path(stem) or (default_file and raster.png_path(default_file))
   if not png then
     return nil
@@ -194,6 +186,18 @@ function M.get_element_icon(element)
   end
   enqueue(stem) -- build off-loop; the glyph shows until the repaint
   return nil
+end
+
+---`get_element_icon` that falls back to `fallback` (e.g. LazyVim's own
+---callback) until an SVG image is ready for the element.
+---@param fallback? fun(element: table): string?, string?
+---@return fun(element: table): string?, string?
+function M.get_element_icon_or(fallback)
+  return function(element)
+    local icon, hl = M.get_element_icon(element)
+    if icon or not fallback then return icon, hl end
+    return fallback(element)
+  end
 end
 
 return M

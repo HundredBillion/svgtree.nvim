@@ -4,9 +4,10 @@ local M = {}
 local defaults = {
   renderer = 'auto',
   native = { width = 280, compact_folders = true, mappings = {} },
-  -- Pack selector: nil = bundled starter; a bare name resolves under
-  -- stdpath('data')/svgtree/packs/<name>; an absolute path = an unpacked VSCode
-  -- icon-theme dir (or a path straight to a theme JSON).
+  -- Pack selector, shared by every renderer: nil = bundled Material; a bare
+  -- name resolves under stdpath('data')/svgtree/packs/<name> ('material' falls
+  -- back to the bundled copy); an absolute path = an unpacked VSCode icon-theme
+  -- dir (or a path straight to a theme JSON).
   pack = nil,
   -- Icon footprint in terminal cells and the pixel size to rasterize to.
   icon = {
@@ -39,13 +40,22 @@ function M.setup(opts)
   end
 
   local pack = require('svgtree.pack')
-  local resolved = pack.load(nil) -- bundled starter, always present
-  if M.options.pack then
-    resolved = pack.load(M.options.pack) or resolved
+  local selector = M.options.pack
+  local resolved = selector and pack.load(selector)
+  if not resolved and (selector == nil or selector == 'material') then
+    resolved = pack.load_bundled_material()
   end
+  resolved = resolved or pack.load(nil) -- tiny starter set, always present
   -- Never nil: a totally broken bundled set degrades to "no icons", not a crash.
   M.options.resolved = resolved or { theme = { iconDefinitions = {} }, dir = '' }
   return M.options
+end
+
+---The active icon pack, resolving the defaults if setup() has not run yet.
+---@return { theme:table, dir:string }
+function M.resolved()
+  if not M.options.resolved then M.setup(M.options) end
+  return M.options.resolved
 end
 
 return M

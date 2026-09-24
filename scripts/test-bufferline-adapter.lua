@@ -66,4 +66,17 @@ else
   print('  skip (no rasterizer): build-path assertions')
 end
 
+-- get_element_icon_or: the fallback covers every element svgtree can't draw.
+local seen
+local wrapped = A.get_element_icon_or(function(el) seen = el; return 'G', 'GlyphHl' end)
+local dir_el = { path = '/tmp', directory = true }
+local g, ghl = wrapped(dir_el)
+check(g == 'G' and ghl == 'GlyphHl' and seen == dir_el, 'get_element_icon_or falls back for a directory')
+check(A.get_element_icon_or()(dir_el) == nil, 'get_element_icon_or without a fallback returns nil')
+if raster.has_converter() then
+  seen = nil
+  local text = wrapped({ path = '/proj/main.py', filetype = 'python', directory = false })
+  check(text ~= 'G' and seen == nil, 'get_element_icon_or keeps a ready SVG icon')
+end
+
 if fails > 0 then print('FAILED: ' .. fails); os.exit(1) else print('test-bufferline-adapter: ALL PASS') end
