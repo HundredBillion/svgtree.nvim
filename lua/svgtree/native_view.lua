@@ -26,7 +26,8 @@ function M.description(_,root,collapsed,side)
     scrollbar_opacity=0.4,scrollbar_hover_opacity=0.7,scrollbar_active_opacity=0.4,
     heading={text='EXPLORER',height=35,font_size=11,font_weight='normal',left_padding=20},
     section={text=name,height=22,font_size=11,font_weight='bold',left_padding=0,icon_gap=4,icon=collapsed and 'svgtree-chevron-right' or 'svgtree-chevron-down',action='root-toggle'},
-    colors=vim.tbl_extend('force',colors,{inactive_guide='svgtree.guide',scrollbar='#797979',scrollbar_hover='#646464',scrollbar_active='#bfbfbf'})}}
+    colors=vim.tbl_extend('force',colors,{inactive_guide='svgtree.guide',scrollbar='#797979',scrollbar_hover='#646464',scrollbar_active='#bfbfbf'},
+      require('svgtree.config').options.native.colors or {})}}
 end
 function M.rows(model,pack)
   local rows,ids={}, {['svgtree-chevron-down']=true,['svgtree-chevron-right']=true}

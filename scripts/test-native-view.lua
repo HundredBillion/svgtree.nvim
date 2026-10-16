@@ -112,3 +112,7 @@ local chevrons=View.assets(custom,{['svgtree-chevron-down']=true,['svgtree-chevr
 assert(chevrons['svgtree-chevron-down']:match('fill="#cccccc"') and chevrons['svgtree-chevron-down']:match('translate%(3 0%)'))
 assert(chevrons['svgtree-chevron-right']:match('fill="#cccccc"') and chevrons['svgtree-chevron-right']:match('translate%(2 0%)'))
 print('native view cache and disclosure: ok')
+
+require('svgtree.config').setup({native={colors={background='#2b2d30'}}})
+assert(require('svgtree.native_view').description(nil, '/tmp', false, 'left').root.colors.background=='#2b2d30')
+print('native palette override: ok')
