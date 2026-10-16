@@ -279,7 +279,8 @@ function M.open(root,saved,callbacks)
         if ev.type=='input' then
           local action=self.controller.keys:feed(ev,vim.uv.now())
           local navigation={next=true,previous=true,first=true,last=true,half_down=true,half_up=true,search_next=true,search_previous=true}
-          if navigation[action] then self.queued_action=action end
+          if type(action)=='function' then self.controller:action(action)
+          elseif navigation[action] then self.queued_action=action end
         end
       else self.controller:handle(ev,vim.uv.now()) end
     end

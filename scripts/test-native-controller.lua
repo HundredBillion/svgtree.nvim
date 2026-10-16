@@ -14,6 +14,10 @@ for _,name in ipairs({'assets','rows','state','focus','focus_editor','update'}) 
 end
 function handle:close() calls.closed=(calls.closed or 0)+1;calls.opts.on_close({kind='requested'}) end
 package.loaded.sprite=sprite
+local shortcuts=0
+require('svgtree.config').setup({native={mappings={
+  ['<Space>gs']=function() shortcuts=shortcuts+1 end,
+}}})
 local ready,failed,closed=0,0,0
 local stop=Native.open(root,nil,{ready=function(v) ready=ready+1;calls.view=v end,failed=function() failed=failed+1 end,closed=function() closed=closed+1 end})
 calls.open(nil,handle)
@@ -25,6 +29,11 @@ while ready==0 do
   c.args[#c.args](nil);i=i+1
   assert(i<10)
 end
+local function source_control()
+  for _, key in ipairs({'space','g','s'}) do calls.opts.on_event({type='input',key=key}) end
+end
+source_control()
+assert(shortcuts==1, 'native explorer executes Space-g-s callback')
 local revision=calls.view.ack_revision
 local initial_projects=view_projects
 local function complete_last() calls[#calls].args[#calls[#calls].args](nil) end
@@ -65,6 +74,9 @@ local function ack_last() for _,value in pairs(calls[#calls].args) do if type(va
 local before=calls.view:snapshot().selected
 calls.opts.on_event({type='list_action',revision=revision,action='root-toggle'})
 assert(calls[#calls].name=='update')
+local count=shortcuts
+source_control()
+assert(shortcuts==count+1, 'sidebar shortcut works while root collapsed and native update pending')
 ack_last()
 assert(calls[#calls].name=='rows')
 ack_last()
