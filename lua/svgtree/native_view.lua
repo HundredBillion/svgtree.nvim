@@ -18,7 +18,7 @@ function M.description(_,root,collapsed,side)
   local colors={}
   local roles={selection='selected',inactiveSelection='inactive_selected',selectionForeground='selected_foreground'}
   for _, pair in ipairs(tokens) do colors[roles[pair[1]] or pair[1]]='svgtree.'..pair[1] end
-  return {version=1,root={kind='virtual_list',border_side=side=='right' and 'left' or 'right',row_height=22,font_size=13,
+  return {version=1,root={kind='virtual_list',border_side=side=='right' and 'left' or 'right',row_height=22,font_size=14,
     -- VS Code's macOS workbench uses -apple-system (San Francisco). GPUI's
     -- platform-neutral system UI alias resolves to that font on macOS.
     font_family='.SystemUIFont',icon_size=16,icon_gap=6,left_padding=8,right_padding=8,
