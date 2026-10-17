@@ -327,3 +327,108 @@ complete(next_state,nil)
 serial.view:close()
 print('native serialized root toggle: ok')
 View.rows=original_view_rows
+
+local Tree=require('svgtree.tree')
+local original_new=Tree.new
+local scans,pending_scans=0,{}
+Tree.new=function(path,opts)
+  opts=vim.tbl_extend('force',opts or {},{scan=function(dir,done)
+    scans=scans+1;pending_scans[#pending_scans+1]={dir=dir,done=done}
+  end})
+  return original_new(path,opts)
+end
+local cached_root=vim.fn.tempname();vim.fn.mkdir(cached_root,'p')
+local function open_cached(path)
+  calls={}
+  local holder={}
+  holder.stop=Native.open(path,nil,{ready=function(v) holder.view=v end})
+  calls.open(nil,new_handle())
+  return holder
+end
+local first=open_cached(cached_root)
+assert(scans==1 and #calls==0)
+pending_scans[1].done(nil,{{name='one.lua',kind='file'},{name='two.lua',kind='file'}})
+finish_open(first)
+first.view.controller:action('last');complete_last()
+local closed_controller=first.view.controller
+first.stop()
+assert(closed_controller.closed and closed_controller.watch.closed)
+local warm=open_cached(cached_root)
+assert(#calls>0 and scans==1,'warm reopen must publish retained rows before scanning')
+finish_open(warm)
+assert(warm.view:snapshot().selected==cached_root..'/two.lua','warm selection survives')
+assert(scans==2,'cached ready must still refresh external changes')
+pending_scans[2].done(nil,{{name='new.lua',kind='file'}})
+assert(warm.view.controller.rows[1].text=='new.lua','hidden filesystem changes are refreshed')
+warm.stop()
+local interrupted=open_cached(cached_root)
+finish_open(interrupted)
+local stale_scan=pending_scans[#pending_scans]
+interrupted.stop()
+local replacement=open_cached(cached_root)
+finish_open(replacement)
+stale_scan.done(nil,{{name='stale.lua',kind='file'}})
+assert(replacement.view.controller.rows[1].text=='new.lua','closed refresh cannot contaminate replacement')
+replacement.stop()
+local hidden_before=require('svgtree.config').options.show_hidden
+require('svgtree.config').options.show_hidden=not hidden_before
+local changed_config=open_cached(cached_root)
+assert(#calls==0,'hidden-file config change must invalidate retained data')
+changed_config.stop()
+require('svgtree.config').options.show_hidden=hidden_before
+for index=1,4 do
+  local other_root=vim.fn.tempname();vim.fn.mkdir(other_root,'p')
+  local other=open_cached(other_root)
+  assert(#calls==0,'different roots cannot reuse retained rows')
+  pending_scans[#pending_scans].done(nil,{{name='other.lua',kind='file'}})
+  finish_open(other)
+  assert(other.view.controller.rows[1].path==other_root..'/other.lua')
+  other.stop()
+end
+local evicted=open_cached(cached_root)
+assert(#calls==0,'retained models must evict least recently used roots')
+evicted.stop()
+local expanded_root=vim.fn.tempname();vim.fn.mkdir(expanded_root..'/folder','p')
+local expanded=open_cached(expanded_root)
+pending_scans[#pending_scans].done(nil,{{name='folder',kind='dir'}})
+pending_scans[#pending_scans].done(nil,{{name='leaf.lua',kind='file'}})
+finish_open(expanded)
+expanded.view.controller:action('enter')
+pending_scans[#pending_scans].done(nil,{{name='folder',kind='dir'}})
+pending_scans[#pending_scans].done(nil,{{name='leaf.lua',kind='file'}})
+expanded.stop()
+local restored=open_cached(expanded_root)
+finish_open(restored)
+assert(#restored.view.controller.rows==2 and restored.view.controller.rows[1].expanded,
+  'expanded children remain usable before the reopen refresh finishes')
+restored.stop()
+local reveal_root=vim.fn.tempname();vim.fn.mkdir(reveal_root..'/folder/inner','p');reveal_root=assert(vim.uv.fs_realpath(reveal_root))
+local reveal_file=reveal_root..'/folder/inner/target.lua'
+vim.fn.writefile({},reveal_file)
+local reveal_view=open_cached(reveal_root)
+pending_scans[#pending_scans].done(nil,{{name='folder',kind='dir'}})
+pending_scans[#pending_scans].done(nil,{{name='inner',kind='dir'},{name='sibling.lua',kind='file'}})
+finish_open(reveal_view)
+local reveal_buf=vim.fn.bufadd(reveal_file)
+reveal_view.view.controller:on_buf_enter(reveal_buf)
+pending_scans[#pending_scans].done(nil,{{name='folder',kind='dir'}})
+pending_scans[#pending_scans].done(nil,{{name='inner',kind='dir'},{name='sibling.lua',kind='file'}})
+pending_scans[#pending_scans].done(nil,{{name='target.lua',kind='file'}})
+reveal_view.stop()
+local revealed_again=open_cached(reveal_root)
+finish_open(revealed_again)
+assert(revealed_again.view:snapshot().selected==reveal_file,
+  'revealed children and selection survive close without another scan: '..vim.inspect(revealed_again.view:snapshot()))
+revealed_again.stop()
+local oversized_root=vim.fn.tempname();vim.fn.mkdir(oversized_root,'p')
+local oversized=open_cached(oversized_root)
+local many={}
+for index=1,20001 do many[index]={name=tostring(index)..'.lua',kind='file'} end
+pending_scans[#pending_scans].done(nil,many)
+finish_open(oversized)
+oversized.stop()
+local uncached=open_cached(oversized_root)
+assert(#calls==0,'oversized roots must not exceed the retained record budget')
+uncached.stop()
+Tree.new=original_new
+print('native retained rows, bounded roots and stale refresh isolation: ok')

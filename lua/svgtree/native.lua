@@ -151,6 +151,10 @@ function M.open(root,saved,callbacks)
           if not self.wanted or self.phase~='opening' then return end
           if self.desired_rows~=self.sent_rows or self.pending_state then send();return end
           self.phase='ready'; self.focused=true; if callbacks.ready then callbacks.ready(self) end; send()
+          if current(g) and self.refresh_after_ready then
+            self.refresh_after_ready=false
+            self.controller:refresh()
+          end
         end)
       else
         send()
@@ -311,7 +315,12 @@ function M.open(root,saved,callbacks)
         if not current(g) or self.phase~='opening' then if handle then handle:close() end; return end
         if err then failure(err);return end
         self.handle=handle
-        self.controller:refresh()
+        if self.controller.cached then
+          self.refresh_after_ready=true
+          self.controller:publish(nil,true)
+        else
+          self.controller:refresh()
+        end
       end)
   end
   function self:root() return self.phase=='closed' and nil or self.root_path end

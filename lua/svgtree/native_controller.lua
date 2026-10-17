@@ -30,6 +30,7 @@ function M.new(opts)
     keys=Keys.new(opts.keys, opts.key_timeout_ms, opts.side), is_active=opts.is_active or function() return true end, search={active=false,query='',last='',matches={}},
     on_search=opts.on_search, compact=opts.compact ~= false,
     generation=0, closed=false}, Controller)
+  if not opts.tree then self.cached = State.restore_tree(self.tree) end
   self.snapshot.root = root
   self.snapshot.scroll = self.snapshot.scroll or {id=nil,offset=0}
   for path, value in pairs(self.snapshot.expanded or {}) do if value then self.tree.expanded[path]=true end end
@@ -64,6 +65,7 @@ function Controller:refresh(dirty)
   self.tree:refresh(function(err)
     if self.closed or generation ~= self.generation then return end
     if not err then
+      State.retain_tree(self.tree)
       self:publish(nil, true)
       if self.pending_reveal then self:reveal_pending(self.pending_reveal) end
     end
@@ -77,6 +79,7 @@ function Controller:reveal_pending(path)
     self.pending_reveal = nil
     if not id then return end
     self.snapshot.selected = path
+    State.retain_tree(self.tree)
     self:publish(id, true)
   end)
 end
