@@ -102,11 +102,16 @@ closes. `<CR>` opens a file and focuses the editor. For a left sidebar,
 `<C-l>`, `<C-w>l`, and `<C-w><C-l>` also focus the editor; use the matching
 `h` forms for a right sidebar. A single click opens a file while keeping tree
 focus; a double click focuses the editor. Set
-`native.mappings` to map a key to an action or `false` to remove it, for
+`native.colors` accepts native list color-role overrides (for example
+`{ background = "#2b2d30", foreground = "#bcbec4" }`). Omitted roles keep
+the existing theme tokens. Use `native.mappings` to map a key to an action, a Lua callback, or `false` to remove it, for
 example:
 
 ```lua
-require('svgtree').setup({ native = { mappings = { ['<Space>'] = 'enter', j = false } } })
+require('svgtree').setup({ native = { mappings = {
+  ['<Space>gs'] = function() require('scm').toggle() end,
+  j = false,
+} } })
 ```
 
 Because a native sidebar is not a Neovim split, editor-side window mappings

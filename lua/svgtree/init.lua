@@ -64,48 +64,33 @@ function M.open(root)
   local token = generation
   if config.options.renderer == 'terminal' then fallback(root, token); return end
   local ok, sprite = pcall(require, 'sprite')
-  if not ok or type(sprite) ~= 'table' or type(sprite.available) ~= 'function' then
+  if not ok or type(sprite) ~= 'table' or type(sprite.open) ~= 'function'
+    or type(sprite.register_tokens) ~= 'function' or type(sprite.on_resume) ~= 'function' then
     fallback(root, token, {message = 'Sprite plugin API is unavailable'})
     return
   end
   active = {kind = 'pending', root = root}
-  local available_ok, available_cancel = pcall(sprite.available, function(err, capabilities)
-    if token ~= generation then return end
-    if err or not capabilities then
-      fallback(root, token, err or {message = 'Sprite pane is ineligible'})
-      return
-    end
-    local features = capabilities.features or {}
-    for _, feature in ipairs({'owned-dock-v1', 'virtual-list-v1', 'svg-assets-v1', 'dock-resize-v1'}) do
-      if not features[feature] and not vim.tbl_contains(features, feature) then
-        fallback(root, token, {message = 'Sprite server lacks ' .. feature})
-        return
+  local opened, cancel = pcall(function() return require('svgtree.native').open(root, nil, {
+    ready = function(view)
+      if token ~= generation then view:close(); return end
+      active = {kind = 'native', root = root, view = view, cancel = function() view:close() end}
+    end,
+    root = function(path)
+      if token == generation then M.open(path) end
+    end,
+    failed = function(failure)
+      if token == generation then
+        if active and active.view then State.save(root, active.view:snapshot()) end
+        fallback(root, token, failure)
       end
-    end
-    local opened, cancel = pcall(function() return require('svgtree.native').open(root, nil, {
-      ready = function(view)
-        if token ~= generation then view:close(); return end
-        active = {kind = 'native', root = root, view = view, cancel = function() view:close() end}
-      end,
-      root = function(path)
-        if token == generation then M.open(path) end
-      end,
-      failed = function(failure)
-        if token == generation then
-          if active and active.view then State.save(root, active.view:snapshot()) end
-          fallback(root, token, failure)
-        end
-      end,
-      closed = function()
-        if token == generation then active = nil; generation = generation + 1 end
-      end,
-    }) end)
-    if not opened then fallback(root, token, {message = tostring(cancel)})
-    elseif token == generation and active and active.kind == 'pending' then active.cancel = cancel end
-    if token ~= generation and opened then cancel() end
-  end)
-  if not available_ok then fallback(root, token, {message = tostring(available_cancel)})
-  elseif token == generation and active and active.kind == 'pending' and not active.cancel then active.cancel = available_cancel end
+    end,
+    closed = function()
+      if token == generation then active = nil; generation = generation + 1 end
+    end,
+  }) end)
+  if not opened then fallback(root, token, {message = tostring(cancel)})
+  elseif token == generation and active and active.kind == 'pending' then active.cancel = cancel
+  elseif token ~= generation and opened then cancel() end
 end
 
 function M.root()

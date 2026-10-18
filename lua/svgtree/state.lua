@@ -1,6 +1,35 @@
 local Tree = require('svgtree.tree')
 local M = {}
 local saved = {}
+local models, model_order = {}, {}
+local model_limit, record_limit = 4, 20000
+
+local function touch(root)
+  for i, value in ipairs(model_order) do
+    if value == root then table.remove(model_order, i); break end
+  end
+  model_order[#model_order + 1] = root
+  if #model_order > model_limit then models[table.remove(model_order, 1)] = nil end
+end
+
+function M.retain_tree(tree)
+  local count = 0
+  for _, record in pairs(tree.cache) do
+    count = count + 1 + #(record.entries or {})
+    if count > record_limit then models[tree.root] = nil; return end
+  end
+  models[tree.root] = {cache = vim.deepcopy(tree.cache), show_hidden = tree.show_hidden,
+    root_realpath = tree.root_realpath}
+  touch(tree.root)
+end
+
+function M.restore_tree(tree)
+  local model = models[tree.root]
+  if not model or model.show_hidden ~= tree.show_hidden or model.root_realpath ~= tree.root_realpath then return false end
+  tree.cache = vim.deepcopy(model.cache)
+  touch(tree.root)
+  return true
+end
 
 local function initial(root)
   return {root = root, expanded = {}, selected = nil,

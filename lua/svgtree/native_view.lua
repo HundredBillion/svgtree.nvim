@@ -18,7 +18,7 @@ function M.description(_,root,collapsed,side)
   local colors={}
   local roles={selection='selected',inactiveSelection='inactive_selected',selectionForeground='selected_foreground'}
   for _, pair in ipairs(tokens) do colors[roles[pair[1]] or pair[1]]='svgtree.'..pair[1] end
-  return {version=1,root={kind='virtual_list',border_side=side=='right' and 'left' or 'right',row_height=22,font_size=13,
+  return {version=1,root={kind='virtual_list',border_side=side=='right' and 'left' or 'right',row_height=22,font_size=14,
     -- VS Code's macOS workbench uses -apple-system (San Francisco). GPUI's
     -- platform-neutral system UI alias resolves to that font on macOS.
     font_family='.SystemUIFont',icon_size=16,icon_gap=6,left_padding=8,right_padding=8,
@@ -26,7 +26,8 @@ function M.description(_,root,collapsed,side)
     scrollbar_opacity=0.4,scrollbar_hover_opacity=0.7,scrollbar_active_opacity=0.4,
     heading={text='EXPLORER',height=35,font_size=11,font_weight='normal',left_padding=20},
     section={text=name,height=22,font_size=11,font_weight='bold',left_padding=0,icon_gap=4,icon=collapsed and 'svgtree-chevron-right' or 'svgtree-chevron-down',action='root-toggle'},
-    colors=vim.tbl_extend('force',colors,{inactive_guide='svgtree.guide',scrollbar='#797979',scrollbar_hover='#646464',scrollbar_active='#bfbfbf'})}}
+    colors=vim.tbl_extend('force',colors,{inactive_guide='svgtree.guide',scrollbar='#797979',scrollbar_hover='#646464',scrollbar_active='#bfbfbf'},
+      require('svgtree.config').options.native.colors or {})}}
 end
 function M.rows(model,pack)
   local rows,ids={}, {['svgtree-chevron-down']=true,['svgtree-chevron-right']=true}

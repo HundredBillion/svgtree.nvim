@@ -59,7 +59,7 @@ function M.validate(overrides)
   assert(type(overrides)=='table', 'native keymaps must be a table')
   for key, action in pairs(overrides) do
     assert(type(key)=='string' and key~='', 'native keymap key must be nonempty text')
-    assert(action == false or allowed[action], 'unknown native tree action: ' .. tostring(action))
+    assert(action == false or type(action) == 'function' or allowed[action], 'unknown native tree action: ' .. tostring(action))
     normalize_binding(key)
   end
 end
@@ -91,6 +91,7 @@ local function token(event)
   if not call or call.method ~= 'nvim_input' then return nil end
   local value = call.args[1]
   if value == '<lt>' then return '<' end
+  if value == '<Space>' then return ' ' end
   return value
 end
 function Keys:feed(event, now_ms)

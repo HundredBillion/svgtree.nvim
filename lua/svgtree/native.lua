@@ -151,6 +151,10 @@ function M.open(root,saved,callbacks)
           if not self.wanted or self.phase~='opening' then return end
           if self.desired_rows~=self.sent_rows or self.pending_state then send();return end
           self.phase='ready'; self.focused=true; if callbacks.ready then callbacks.ready(self) end; send()
+          if current(g) and self.refresh_after_ready then
+            self.refresh_after_ready=false
+            self.controller:refresh()
+          end
         end)
       else
         send()
@@ -279,7 +283,8 @@ function M.open(root,saved,callbacks)
         if ev.type=='input' then
           local action=self.controller.keys:feed(ev,vim.uv.now())
           local navigation={next=true,previous=true,first=true,last=true,half_down=true,half_up=true,search_next=true,search_previous=true}
-          if navigation[action] then self.queued_action=action end
+          if type(action)=='function' then self.controller:action(action)
+          elseif navigation[action] then self.queued_action=action end
         end
       else self.controller:handle(ev,vim.uv.now()) end
     end
@@ -310,7 +315,12 @@ function M.open(root,saved,callbacks)
         if not current(g) or self.phase~='opening' then if handle then handle:close() end; return end
         if err then failure(err);return end
         self.handle=handle
-        self.controller:refresh()
+        if self.controller.cached then
+          self.refresh_after_ready=true
+          self.controller:publish(nil,true)
+        else
+          self.controller:refresh()
+        end
       end)
   end
   function self:root() return self.phase=='closed' and nil or self.root_path end
