@@ -102,6 +102,39 @@ function M.new(root, opts)
   }, Tree)
 end
 
+-- Cache records are never changed in place; every write replaces a record
+-- through `put`. A cache handed to or taken from a retained model is shared,
+-- so the first write afterwards copies the path index (not the records),
+-- leaving the retained model as it was.
+local function put(self, path, record)
+  if self.cache_shared then
+    local own = {}
+    for key, value in pairs(self.cache) do own[key] = value end
+    self.cache, self.cache_shared = own, false
+  end
+  self.cache[path] = record
+end
+
+local function set_realpath(self, path, realpath)
+  local record = self.cache[path]
+  if record.realpath == realpath then return end
+  local copy = {}
+  for key, value in pairs(record) do copy[key] = value end
+  copy.realpath = realpath
+  put(self, path, copy)
+end
+
+---Hand this tree's cache to a retained model; later writes copy before changing it.
+function Tree:share_cache()
+  self.cache_shared = true
+  return self.cache
+end
+
+---Adopt a retained cache without copying it; later writes copy before changing it.
+function Tree:adopt_cache(cache)
+  self.cache, self.cache_shared = cache, true
+end
+
 function Tree:is_expanded(path)
   return self.expanded[M.normalize(path)] == true
 end
@@ -161,8 +194,8 @@ function Tree:refresh(callback, dirty_dirs)
     if queued[path] then return end
     queued[path] = true
     queue[#queue + 1] = {path = path, ancestors = ancestors}
-    self.cache[path] = {status = 'loading', entries = self.cache[path] and self.cache[path].entries or nil,
-      realpath = self.cache[path] and self.cache[path].realpath or nil}
+    put(self, path, {status = 'loading', entries = self.cache[path] and self.cache[path].entries or nil,
+      realpath = self.cache[path] and self.cache[path].realpath or nil})
   end
   local function inspect(task)
     local path, ancestors = task.path, task.ancestors
@@ -179,9 +212,9 @@ function Tree:refresh(callback, dirty_dirs)
           local child_record = self.cache[child]
           if full or dirty[child] or not child_record or child_record.status == 'unknown' or child_record.status == 'loading' then
             enqueue(child, own)
-            self.cache[child].realpath = entry.realpath
+            set_realpath(self, child, entry.realpath)
           else
-            child_record.realpath = entry.realpath
+            set_realpath(self, child, entry.realpath)
             inspect_queue[#inspect_queue + 1] = {path = child, ancestors = own}
           end
         end
@@ -210,9 +243,9 @@ function Tree:refresh(callback, dirty_dirs)
           return
         end
         active = active - 1
-        self.cache[task.path] = {status = err and 'error' or 'loaded', error = err,
+        put(self, task.path, {status = err and 'error' or 'loaded', error = err,
           entries = sorted(entries, self.show_hidden),
-          realpath = task.path == self.root and self.root_realpath or self.cache[task.path].realpath}
+          realpath = task.path == self.root and self.root_realpath or self.cache[task.path].realpath})
         if not err then inspect_queue[#inspect_queue + 1] = task end
         pump()
       end)
@@ -276,7 +309,7 @@ end
 function Tree:close()
   self.closed = true
   self.generation = self.generation + 1
-  self.cache = {}
+  self.cache, self.cache_shared = {}, false
 end
 
 return M
