@@ -18,7 +18,7 @@ function M.retain_tree(tree)
     count = count + 1 + #(record.entries or {})
     if count > record_limit then models[tree.root] = nil; return end
   end
-  models[tree.root] = {cache = vim.deepcopy(tree.cache), show_hidden = tree.show_hidden,
+  models[tree.root] = {cache = tree:share_cache(), show_hidden = tree.show_hidden,
     root_realpath = tree.root_realpath}
   touch(tree.root)
 end
@@ -26,7 +26,7 @@ end
 function M.restore_tree(tree)
   local model = models[tree.root]
   if not model or model.show_hidden ~= tree.show_hidden or model.root_realpath ~= tree.root_realpath then return false end
-  tree.cache = vim.deepcopy(model.cache)
+  tree:adopt_cache(model.cache)
   touch(tree.root)
   return true
 end
@@ -53,7 +53,7 @@ function M.save(root, snapshot)
   root = Tree.normalize(root)
   local state = vim.tbl_deep_extend('force', initial(root), vim.deepcopy(snapshot or {}))
   state.root = root
-  saved[root] = vim.deepcopy(state)
+  saved[root] = state
   return vim.deepcopy(state)
 end
 
