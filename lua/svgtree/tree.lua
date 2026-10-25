@@ -291,9 +291,9 @@ function Tree:status(path)
   return record and record.status or 'unknown', record and record.error or nil
 end
 
-function Tree:visible_dirs(compact)
+function Tree:visible_dirs(compact, rows)
   local dirs, seen = {self.root}, {[self.root] = true}
-  for _, row in ipairs(require('svgtree.state').rows(self, compact)) do
+  for _, row in ipairs(rows or require('svgtree.state').rows(self, compact)) do
     if row.kind == 'dir' then
       for _, path in ipairs(row.chain) do
         if not seen[path] and self.cache[path] and self.cache[path].status == 'loaded' then
