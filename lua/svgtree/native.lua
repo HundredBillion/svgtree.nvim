@@ -239,8 +239,33 @@ function M.open(root,saved,callbacks)
     self.pending_state=true
     save();send()
   end
+  local pending_command
   local function event(ev)
     if self.phase~='ready' or not self.controller then return end
+    if pending_command then
+      if ev.type=='input' then
+        local call=require('sprite.input').call(ev)
+        if call and call.method=='nvim_input' then pending_command[#pending_command+1]=call.args[1] end
+      end
+      return
+    end
+    if ev.type=='input' and not self.controller.search.active then
+      local call=require('sprite.input').call(ev)
+      if call and call.method=='nvim_input' and call.args[1]==':' then
+        pending_command={':'}
+        self.focused=false
+        self.controller.keys:reset()
+        local g=self.generation
+        self.handle:focus_editor(function(err)
+          if not current(g) then return end
+          if err then pending_command=nil; failure(err); return end
+          local input=table.concat(pending_command)
+          pending_command=nil
+          vim.api.nvim_input(input)
+        end)
+        return
+      end
+    end
     if ev.type=='focus' then self.focused=true;self.controller.keys:reset()
     elseif ev.type=='blur' then self.focused=false; self.controller:handle(ev)
     elseif ev.type=='dock_size' then
