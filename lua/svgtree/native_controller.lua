@@ -51,7 +51,7 @@ function Controller:publish(reveal, structure_changed)
     self.rows = rows
     self.snapshot.expanded = vim.deepcopy(self.tree.expanded)
     self:update_search()
-    self.watch:set(self.tree:visible_dirs(self.compact))
+    self.watch:set(self.tree:visible_dirs(self.compact, rows))
     if self.on_search then self.on_search(rows) end
   end
   State.save(self.root, self.snapshot)
