@@ -1,5 +1,5 @@
 vim.opt.runtimepath:prepend(vim.fn.getcwd())
-local api = assert(vim.env.SVGTREE_API_CHECKOUT, 'set SVGTREE_API_CHECKOUT')
+local api = vim.fn.fnamemodify(assert(vim.env.SVGTREE_API_CHECKOUT, 'set SVGTREE_API_CHECKOUT'), ':p')
 vim.opt.runtimepath:prepend(api)
 local host = dofile(api .. '/tests/dock_host.lua').start()
 local root = vim.fn.tempname()
