@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: HundredBillion/sprite.nvim
-          ref: e4b272dcff25f062f4c6d699cbc44e71807344bc
+          ref: 92b815273ab08f977fb07ccee719a554ebef2371
           path: .test-deps/sprite.nvim
       - uses: rhysd/action-setup-vim@v1
         id: nvim
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: HundredBillion/sprite.nvim
-          ref: e4b272dcff25f062f4c6d699cbc44e71807344bc
+          ref: 92b815273ab08f977fb07ccee719a554ebef2371
           path: .test-deps/sprite.nvim
       - run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
       - uses: rhysd/action-setup-vim@v1
