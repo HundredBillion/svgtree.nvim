@@ -18,6 +18,12 @@ font, spacing, Material icons, tree state, and navigation. In Ghostty or any
 other terminal, the same configuration automatically uses svgtree's terminal
 renderer instead.
 
+Native support requires Sprite Terminal 0.6.0+ and `sprite.nvim` v0.5.0+
+(or current `main`). Update both plugins with `:Lazy update svgtree.nvim sprite.nvim`
+and restart Neovim after upgrading Sprite. Older adapters reject Sprite's
+window-qualified pane address and silently use the terminal tree in `auto`
+mode; `renderer = 'sprite'` shows the connection failure.
+
 
 
 ### LazyVim setup
