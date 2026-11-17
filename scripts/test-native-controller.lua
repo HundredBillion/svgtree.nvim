@@ -37,6 +37,7 @@ assert(shortcuts==1, 'native explorer executes Space-g-s callback')
 local revision=calls.view.ack_revision
 local initial_projects=view_projects
 local function complete_last() calls[#calls].args[#calls[#calls].args](nil) end
+assert(calls.opts.reuse_rows==true,'the dock is opened with reuse_rows')
 calls.opts.on_event({type='input',key='j',text='j'})
 assert(calls[#calls].name=='state' and view_projects==initial_projects,'native selection must send state without row projection')
 assert(calls[#calls].args[2].scroll==nil,'ordinary selection does not resend scroll')

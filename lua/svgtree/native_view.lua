@@ -50,6 +50,38 @@ function M.rows(model,pack)
   end
   return rows,ids
 end
+-- Whether two rows built by M.rows would draw the same.
+local function same_row(a,b)
+  if a.text~=b.text or a.indent~=b.indent or a.icon~=b.icon or a.leading~=b.leading then return false end
+  local guides,others=a.guides,b.guides
+  if #guides~=#others then return false end
+  for i=1,#guides do
+    if guides[i].offset~=others[i].offset or guides[i].id~=others[i].id then return false end
+  end
+  return true
+end
+-- Put the table of `kept`, the rows of the last list by id, in place of each
+-- of `rows` that draws the same. Sprite is told that a row table it has seen
+-- is unchanged and spends nothing on it, and two lists are the same list
+-- exactly when they hold the same tables. Returns the rows by id.
+function M.reuse(kept,rows)
+  local by_id={}
+  for i=1,#rows do
+    local row=rows[i]
+    local old=kept[row.id]
+    if old and same_row(old,row) then row=old; rows[i]=old end
+    by_id[row.id]=row
+  end
+  return by_id
+end
+-- Whether two lists hold the same row tables in the same order.
+function M.same_rows(a,b)
+  if not a or not b or #a~=#b then return false end
+  for i=1,#a do
+    if a[i]~=b[i] then return false end
+  end
+  return true
+end
 function M.active_guides(rows,selected)
   local result,groups={},{}
   for _,row in ipairs(rows or {}) do
