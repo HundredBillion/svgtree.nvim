@@ -179,7 +179,7 @@ function M.open(root,saved,callbacks)
       end)
       return
     end
-    if self.desired_rows and (self.ack_revision==0 or not vim.deep_equal(self.desired_rows,self.sent_rows)) then
+    if self.desired_rows and (self.ack_revision==0 or not View.same_rows(self.desired_rows,self.sent_rows)) then
       self.busy=true; self.busy_kind='structure'
       local rows=self.desired_rows
       local ids=self.desired_ids
@@ -231,7 +231,9 @@ function M.open(root,saved,callbacks)
     if rows~=self.projected_rows or snapshot.root_collapsed~=self.projected_collapsed then
       local rendered,ids=View.rows(rows,pack)
       if snapshot.root_collapsed then rendered={}; ids={['svgtree-chevron-right']=true} end
-      if not vim.deep_equal(rendered,self.desired_rows) then self.desired_rows=rendered;self.desired_ids=ids end
+      -- An unchanged row is handed to Sprite as the table it was last time.
+      self.kept=View.reuse(self.kept or {},rendered)
+      if not View.same_rows(rendered,self.desired_rows) then self.desired_rows=rendered;self.desired_ids=ids end
       self.projected_rows=rows
       self.projected_collapsed=snapshot.root_collapsed
     end
@@ -327,7 +329,8 @@ function M.open(root,saved,callbacks)
       on_close=function() self:close() end,
       on_root=function(path) if callbacks.root then callbacks.root(path) end end,
       on_editor_focus=function() if self.handle then self.handle:focus_editor(function(e) if current(g) and e then failure(e) end end) end end})
-    sprite.open({side=side,width=self.snapshot_value.widths.native or 280,
+    -- reuse_rows: a row table passed to the dock again is an unchanged row.
+    sprite.open({side=side,reuse_rows=true,width=self.snapshot_value.widths.native or 280,
       description=View.description(nil,root,self.snapshot_value.root_collapsed,side),
       on_event=function(ev) if current(g) then event(ev) end end,on_close=function(reason)
         if not current(g) then return end

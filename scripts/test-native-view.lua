@@ -116,3 +116,36 @@ print('native view cache and disclosure: ok')
 require('svgtree.config').setup({native={colors={background='#2b2d30'}}})
 assert(require('svgtree.native_view').description(nil, '/tmp', false, 'left').root.colors.background=='#2b2d30')
 print('native palette override: ok')
+
+-- A row that draws the same is handed back as the table it was, which is how
+-- Sprite knows not to work it out again.
+do
+  local function row()
+    return {id='/r/a.lua',text='a.lua',indent=8,icon='lua',leading='svgtree-transparent',guides={{offset=8,id='/r'}}}
+  end
+  local first=row()
+  local kept=View.reuse({}, {first})
+  assert(kept['/r/a.lua']==first,'a new row is kept by its id')
+  local again={row()}
+  View.reuse(kept,again)
+  assert(rawequal(again[1],first),'an unchanged row is replaced by the table kept')
+  for _,change in ipairs({
+    function(r) r.text='b.lua' end,function(r) r.indent=16 end,function(r) r.icon='md' end,
+    function(r) r.icon=nil end,function(r) r.leading='svgtree-chevron-down' end,
+    function(r) r.guides[1].id='/other' end,function(r) r.guides[1].offset=16 end,function(r) r.guides={} end,
+    function(r) r.guides[2]={offset=16,id='/r/x'} end,
+  }) do
+    local changed=row()
+    change(changed)
+    local list={changed}
+    View.reuse(kept,list)
+    assert(rawequal(list[1],changed),'a row that draws differently stays its own table')
+  end
+  local one,two=row(),row()
+  two.id='/r/b.lua'
+  assert(View.same_rows({one,two},{one,two}),'the same tables in the same order are the same list')
+  assert(not View.same_rows({one,two},{two,one}),'another order is another list')
+  assert(not View.same_rows({one},{one,two}) and not View.same_rows(nil,{one}),'as is another length')
+  assert(not View.same_rows({one},{row()}),'and an equal row in another table')
+end
+print('native view row reuse: ok')
